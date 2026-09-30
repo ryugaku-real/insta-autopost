@@ -1,0 +1,48 @@
+{
+  "draft": false,
+  "publish_at": "2026-10-08 07:00+09:00",
+  "caption": "買い物で使える英語フレーズ🛍\nレジでよく聞かれることも一緒に覚えよう。\n.\n.\n#英会話 #英語フレーズ #英語学習 #アメリカ留学 #留学準備 #留学生 #海外留学 #日常英会話 #英語勉強 #留学生活",
+  "slides": [
+    {
+      "type": "cover",
+      "label": "保存推奨",
+      "title": "買い物で\nそのまま使える\n英語フレーズ",
+      "sub": "レジで焦らない"
+    },
+    {
+      "type": "phrase",
+      "en": "I'm just looking.",
+      "ja": "見ているだけです",
+      "note": "店員さんに声をかけられたときに"
+    },
+    {
+      "type": "phrase",
+      "en": "Do you have this in a different size?",
+      "ja": "これの違うサイズはありますか？",
+      "note": "服を買うときに"
+    },
+    {
+      "type": "phrase",
+      "en": "Do you need a bag?",
+      "ja": "袋はいりますか？",
+      "note": "レジでよく聞かれる。No, I'm good. で断れる"
+    },
+    {
+      "type": "phrase",
+      "en": "Can I pay with card?",
+      "ja": "カードで払えますか？",
+      "note": "アメリカはカード払いがほとんど"
+    },
+    {
+      "type": "cta"
+    }
+  ],
+  "images": [
+    "01.jpg",
+    "02.jpg",
+    "03.jpg",
+    "04.jpg",
+    "05.jpg",
+    "06.jpg"
+  ]
+}

@@ -1,0 +1,55 @@
+{
+  "draft": false,
+  "publish_at": "2026-10-01 18:00+09:00",
+  "caption": "授業で本当によく使う英語フレーズ5つ📚\nこれだけ覚えておけば、わからないときも焦らない！\n.\n.\n#英会話 #英語フレーズ #英語学習 #アメリカ留学 #留学準備 #留学生 #海外留学 #日常英会話 #英語勉強 #留学生活",
+  "slides": [
+    {
+      "type": "cover",
+      "label": "保存推奨",
+      "title": "授業で\n毎日使う英語\nフレーズ5選",
+      "sub": "留学初日から使える"
+    },
+    {
+      "type": "phrase",
+      "en": "Could you say that again, please?",
+      "ja": "もう一度言ってもらえますか？",
+      "note": "聞き取れなかったときの基本。Pardon? より自然"
+    },
+    {
+      "type": "phrase",
+      "en": "What does ◯◯ mean?",
+      "ja": "◯◯ってどういう意味ですか？",
+      "note": "知らない単語が出たらすぐ聞いてOK"
+    },
+    {
+      "type": "phrase",
+      "en": "When is this due?",
+      "ja": "これの締め切りはいつですか？",
+      "note": "due＝締め切り。課題の話で毎日出てくる"
+    },
+    {
+      "type": "phrase",
+      "en": "Can I ask you a quick question?",
+      "ja": "ちょっと質問してもいいですか？",
+      "note": "授業のあとに先生へ話しかけるときに"
+    },
+    {
+      "type": "phrase",
+      "en": "I'm not sure I understand.",
+      "ja": "よくわかっていないかもしれません",
+      "note": "わからないと素直に言うのは全然OK"
+    },
+    {
+      "type": "cta"
+    }
+  ],
+  "images": [
+    "01.jpg",
+    "02.jpg",
+    "03.jpg",
+    "04.jpg",
+    "05.jpg",
+    "06.jpg",
+    "07.jpg"
+  ]
+}

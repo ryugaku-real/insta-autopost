@@ -1,0 +1,48 @@
+{
+  "draft": false,
+  "publish_at": "2026-10-06 07:00+09:00",
+  "caption": "先生へのメール、なんて書けばいい？✉️\nこの型を覚えておけば失礼にならずに送れます。\n.\n.\n#英会話 #英語フレーズ #英語学習 #アメリカ留学 #留学準備 #留学生 #海外留学 #日常英会話 #英語勉強 #留学生活",
+  "slides": [
+    {
+      "type": "cover",
+      "label": "保存推奨",
+      "title": "先生へのメール\nこれで\n失礼にならない",
+      "sub": "英語メールの基本の型"
+    },
+    {
+      "type": "phrase",
+      "en": "Dear Professor ◯◯,",
+      "ja": "◯◯先生へ",
+      "note": "書き出しはこれでOK。Hi Professor ◯◯, でも大丈夫な先生も"
+    },
+    {
+      "type": "phrase",
+      "en": "I'm in your ◯◯ class.",
+      "ja": "◯◯の授業を取っている者です",
+      "note": "最初に自分が誰かを伝える"
+    },
+    {
+      "type": "phrase",
+      "en": "I was wondering if ...",
+      "ja": "…していただけないでしょうか",
+      "note": "お願いするときの丁寧な言い方"
+    },
+    {
+      "type": "phrase",
+      "en": "Thank you for your time.",
+      "ja": "お時間をいただきありがとうございます",
+      "note": "締めの一言。最後に Best, と名前を書く"
+    },
+    {
+      "type": "cta"
+    }
+  ],
+  "images": [
+    "01.jpg",
+    "02.jpg",
+    "03.jpg",
+    "04.jpg",
+    "05.jpg",
+    "06.jpg"
+  ]
+}

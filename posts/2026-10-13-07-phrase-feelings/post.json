@@ -1,0 +1,48 @@
+{
+  "draft": false,
+  "publish_at": "2026-10-13 07:00+09:00",
+  "caption": "気持ちを伝える英語フレーズ😊\nGood と Bad だけじゃもったいない！\n.\n.\n#英会話 #英語フレーズ #英語学習 #アメリカ留学 #留学準備 #留学生 #海外留学 #日常英会話 #英語勉強 #留学生活",
+  "slides": [
+    {
+      "type": "cover",
+      "label": "保存推奨",
+      "title": "気持ちを伝える\n英語フレーズ",
+      "sub": "Good・Bad以外の言い方"
+    },
+    {
+      "type": "phrase",
+      "en": "I'm so excited!",
+      "ja": "すごく楽しみ！",
+      "note": "楽しみなことがあるときに"
+    },
+    {
+      "type": "phrase",
+      "en": "I'm exhausted.",
+      "ja": "もうクタクタ",
+      "note": "tired よりもっと疲れているとき"
+    },
+    {
+      "type": "phrase",
+      "en": "I'm stressed out.",
+      "ja": "ストレスでいっぱい",
+      "note": "テスト前によく聞く"
+    },
+    {
+      "type": "phrase",
+      "en": "That's awesome!",
+      "ja": "最高じゃん！",
+      "note": "相手のいい話を聞いたときに"
+    },
+    {
+      "type": "cta"
+    }
+  ],
+  "images": [
+    "01.jpg",
+    "02.jpg",
+    "03.jpg",
+    "04.jpg",
+    "05.jpg",
+    "06.jpg"
+  ]
+}

@@ -1,0 +1,48 @@
+{
+  "draft": false,
+  "publish_at": "2026-10-11 07:00+09:00",
+  "caption": "わからないときに聞き返す英語🤔\n聞き返すのは失礼じゃないので、どんどん使おう。\n.\n.\n#英会話 #英語フレーズ #英語学習 #アメリカ留学 #留学準備 #留学生 #海外留学 #日常英会話 #英語勉強 #留学生活",
+  "slides": [
+    {
+      "type": "cover",
+      "label": "保存推奨",
+      "title": "聞き取れない\nときの\n聞き返し方",
+      "sub": "聞き返すのは失礼じゃない"
+    },
+    {
+      "type": "phrase",
+      "en": "Sorry, what was that?",
+      "ja": "ごめん、なんて言った？",
+      "note": "カジュアルに聞き返すとき"
+    },
+    {
+      "type": "phrase",
+      "en": "Could you speak a little slower?",
+      "ja": "もう少しゆっくり話してもらえますか？",
+      "note": "速すぎるときは素直にお願いしよう"
+    },
+    {
+      "type": "phrase",
+      "en": "Do you mean ◯◯?",
+      "ja": "◯◯ってことですか？",
+      "note": "理解が合っているか確認するときに"
+    },
+    {
+      "type": "phrase",
+      "en": "How do you spell that?",
+      "ja": "どう書きますか？",
+      "note": "名前や単語が聞き取れないときに"
+    },
+    {
+      "type": "cta"
+    }
+  ],
+  "images": [
+    "01.jpg",
+    "02.jpg",
+    "03.jpg",
+    "04.jpg",
+    "05.jpg",
+    "06.jpg"
+  ]
+}

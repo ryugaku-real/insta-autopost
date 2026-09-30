@@ -1,0 +1,48 @@
+{
+  "draft": false,
+  "publish_at": "2026-10-14 07:00+09:00",
+  "caption": "電話で使う英語フレーズ📞\n顔が見えない分、英語の電話は難しい…でも型があれば大丈夫。\n.\n.\n#英会話 #英語フレーズ #英語学習 #アメリカ留学 #留学準備 #留学生 #海外留学 #日常英会話 #英語勉強 #留学生活",
+  "slides": [
+    {
+      "type": "cover",
+      "label": "保存推奨",
+      "title": "英語の電話で\n焦らない\nフレーズ",
+      "sub": "予約や問い合わせに"
+    },
+    {
+      "type": "phrase",
+      "en": "Hi, I'm calling about ...",
+      "ja": "…の件でお電話しました",
+      "note": "最初に用件を伝える"
+    },
+    {
+      "type": "phrase",
+      "en": "I'd like to make an appointment.",
+      "ja": "予約をしたいです",
+      "note": "病院や手続きの予約に"
+    },
+    {
+      "type": "phrase",
+      "en": "Could you repeat that?",
+      "ja": "もう一度言ってもらえますか？",
+      "note": "電話では聞き返して当たり前"
+    },
+    {
+      "type": "phrase",
+      "en": "Can I get your name, please?",
+      "ja": "お名前を伺ってもいいですか？",
+      "note": "誰と話したかメモしておくと安心"
+    },
+    {
+      "type": "cta"
+    }
+  ],
+  "images": [
+    "01.jpg",
+    "02.jpg",
+    "03.jpg",
+    "04.jpg",
+    "05.jpg",
+    "06.jpg"
+  ]
+}

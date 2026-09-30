@@ -1,0 +1,48 @@
+{
+  "draft": false,
+  "publish_at": "2026-10-05 07:00+09:00",
+  "caption": "困ったときに使える英語フレーズ🆘\n知っているだけで安心感が全然違います。\n.\n.\n#英会話 #英語フレーズ #英語学習 #アメリカ留学 #留学準備 #留学生 #海外留学 #日常英会話 #英語勉強 #留学生活",
+  "slides": [
+    {
+      "type": "cover",
+      "label": "保存推奨",
+      "title": "困ったときに\n助けてくれる\n英語フレーズ",
+      "sub": "覚えておくと安心"
+    },
+    {
+      "type": "phrase",
+      "en": "Excuse me, could you help me?",
+      "ja": "すみません、手伝ってもらえますか？",
+      "note": "まずはこれで話しかける"
+    },
+    {
+      "type": "phrase",
+      "en": "I think I'm lost.",
+      "ja": "道に迷ったみたいです",
+      "note": "キャンパスで迷ったときにも"
+    },
+    {
+      "type": "phrase",
+      "en": "How do I get to ◯◯?",
+      "ja": "◯◯へはどう行けばいいですか？",
+      "note": "建物や教室の場所を聞くときに"
+    },
+    {
+      "type": "phrase",
+      "en": "Is there someone who speaks Japanese?",
+      "ja": "日本語を話せる人はいますか？",
+      "note": "病院などで本当に困ったときに"
+    },
+    {
+      "type": "cta"
+    }
+  ],
+  "images": [
+    "01.jpg",
+    "02.jpg",
+    "03.jpg",
+    "04.jpg",
+    "05.jpg",
+    "06.jpg"
+  ]
+}
