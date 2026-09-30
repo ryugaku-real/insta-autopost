@@ -1,0 +1,49 @@
+name: 自動投稿
+
+on:
+  schedule:
+    - cron: "7 * * * *"   # 毎時7分に予約を確認（GitHubの混雑で数十分遅れることがあります）
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "テスト実行（投稿しない）"
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+concurrency:
+  group: instagram-publish
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: 予約時刻を過ぎた投稿を公開
+        env:
+          IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
+          IG_USER_ID: ${{ secrets.IG_USER_ID }}
+          IMAGE_BASE_URL: https://raw.githubusercontent.com/${{ github.repository }}/${{ github.sha }}
+        run: |
+          if [ "${{ inputs.dry_run }}" = "true" ]; then
+            python scripts/ig.py publish --dry-run
+          else
+            python scripts/ig.py publish
+          fi
+      - name: 公開記録を保存
+        if: always()
+        run: |
+          if [ -n "$(git status --porcelain published.json)" ]; then
+            git config user.name "insta-autopost"
+            git config user.email "actions@users.noreply.github.com"
+            git add published.json
+            git commit -m "公開記録を更新"
+            git pull --rebase --autostash
+            git push
+          fi
