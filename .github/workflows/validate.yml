@@ -4,7 +4,16 @@ on:
   push:
     paths:
       - "posts/**"
+      - "scripts/render.py"
+      - "tools/**"
   workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: instagram-publish
+  cancel-in-progress: false
 
 jobs:
   validate:
@@ -14,4 +23,22 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      - name: 投稿データとスライド画像を作る
+        run: |
+          python tools/make_posts.py
+          if ! python -c "import PIL" 2>/dev/null; then pip install -q pillow; fi
+          if ! python scripts/render.py --check; then
+            sudo apt-get install -y -qq fonts-noto-cjk > /dev/null
+            python scripts/render.py
+          fi
+      - name: 画像を保存
+        run: |
+          if [ -n "$(git status --porcelain --untracked-files=all posts)" ]; then
+            git config user.name "insta-autopost"
+            git config user.email "actions@users.noreply.github.com"
+            git add posts
+            git commit -m "スライド画像を作成"
+            git pull --rebase --autostash
+            git push
+          fi
       - run: python scripts/ig.py validate

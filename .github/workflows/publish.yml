@@ -25,12 +25,27 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      - name: 足りないスライド画像を作る
+        run: |
+          pip install -q pillow
+          if ! python scripts/render.py --check; then
+            sudo apt-get install -y -qq fonts-noto-cjk > /dev/null
+            python scripts/render.py
+          fi
+          if [ -n "$(git status --porcelain --untracked-files=all posts)" ]; then
+            git config user.name "insta-autopost"
+            git config user.email "actions@users.noreply.github.com"
+            git add posts
+            git commit -m "スライド画像を作成"
+            git pull --rebase --autostash
+            git push
+          fi
       - name: 予約時刻を過ぎた投稿を公開
         env:
           IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
           IG_USER_ID: ${{ secrets.IG_USER_ID }}
-          IMAGE_BASE_URL: https://raw.githubusercontent.com/${{ github.repository }}/${{ github.sha }}
         run: |
+          export IMAGE_BASE_URL="https://raw.githubusercontent.com/${{ github.repository }}/$(git rev-parse HEAD)"
           if [ "${{ inputs.dry_run }}" = "true" ]; then
             python scripts/ig.py publish --dry-run
           else
