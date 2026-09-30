@@ -117,7 +117,8 @@ def pill(d, text, cx, y, bg, fg, size=34):
     f = font(True, size)
     w = f.getlength(text)
     d.rounded_rectangle((cx - w / 2 - 28, y, cx + w / 2 + 28, y + size + 30), radius=(size + 30) // 2, fill=bg)
-    d.text((cx - w / 2, y + 12), text, font=f, fill=fg)
+    b = f.getbbox(text)
+    d.text((cx - w / 2, y + (size + 30 - (b[3] - b[1])) / 2 - b[1]), text, font=f, fill=fg)
 
 
 # ------------------------------------------------------------------ slide types
@@ -231,6 +232,29 @@ def s_cta(s, idx, total):
     return im
 
 
+def make_story(folder: Path) -> None:
+    """1枚目の画像からストーリーズ用（1080x1920）の画像を作る"""
+    SW, SH = 1080, 1920
+    im = Image.new("RGB", (SW, SH), NAVY)
+    d = ImageDraw.Draw(im)
+    pill(d, "新しい投稿", SW / 2, 170, RED, WHITE, size=46)
+    cover = Image.open(folder / "01.jpg").convert("RGB").resize((840, 1050))
+    x, y = (SW - 840) // 2, 330
+    d.rounded_rectangle((x - 14, y - 14, x + 854, y + 1064), radius=36, fill=CREAM)
+    im.paste(cover, (x, y))
+    f = font(True, 56)
+    for i, t in enumerate(["プロフィールから", "チェックしてね"]):
+        d.text(((SW - f.getlength(t)) / 2, 1490 + i * 80), t, font=f, fill=WHITE)
+    f = font(True, 40)
+    d.text(((SW - f.getlength(HANDLE)) / 2, 1700), HANDLE, font=f, fill=SOFT)
+    im.save(folder / "story.jpg", quality=90, optimize=True)
+
+
+def story_targets(force=False):
+    return [pj.parent for pj in sorted(POSTS.glob("*/post.json"))
+            if (pj.parent / "01.jpg").exists() and (force or not (pj.parent / "story.jpg").exists())]
+
+
 TYPES = {"cover": s_cover, "point": s_point, "list": s_list, "phrase": s_phrase, "cta": s_cta}
 
 
@@ -253,8 +277,9 @@ def main() -> int:
     force = "--force" in sys.argv
     todo = targets(force)
     if "--check" in sys.argv:
-        print(f"作る必要がある投稿: {len(todo)}")
-        return 1 if todo else 0
+        stories = [pj.parent for pj, _, _ in todo] + story_targets(force)
+        print(f"作る必要がある投稿: {len(todo)}（ストーリーズ画像: {len(set(stories))}）")
+        return 1 if (todo or stories) else 0
     for pj, p, names in todo:
         slides = p["slides"]
         for i, s in enumerate(slides, 1):
@@ -264,6 +289,10 @@ def main() -> int:
             p["images"] = names
             pj.write_text(json.dumps(p, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
         print(f"作成: {pj.parent.name}（{len(names)}枚）")
+        make_story(pj.parent)
+    for folder in story_targets(force):
+        make_story(folder)
+        print(f"ストーリーズ画像: {folder.name}")
     return 0
 
 

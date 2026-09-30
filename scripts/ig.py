@@ -40,6 +40,9 @@ API_BASE = os.environ.get("IG_API_BASE", "https://graph.instagram.com").rstrip("
 API_VERSION = os.environ.get("IG_API_VERSION", "v23.0")
 DEFAULT_TZ = ZoneInfo(os.environ.get("DEFAULT_TZ", "America/Chicago"))
 LATE_LIMIT = dt.timedelta(hours=float(os.environ.get("LATE_LIMIT_HOURS", "24")))
+JST = ZoneInfo("Asia/Tokyo")
+# この時間（日本時間）の投稿は、ストーリーズにも自動でシェアする（post.json の "story": true/false で個別に変更可）
+STORY_HOURS = {int(h) for h in os.environ.get("STORY_HOURS_JST", "18").split(",") if h.strip()}
 
 MAX_CAPTION = 2200
 MAX_HASHTAGS = 30
@@ -206,6 +209,45 @@ def publish_post(ig_id: str, p: dict) -> dict:
     return {"media_id": media_id, "permalink": info.get("permalink")}
 
 
+def wants_story(p: dict) -> bool:
+    if not (p["_dir"] / "story.jpg").exists():
+        return False
+    if "story" in p:
+        return bool(p["story"])
+    return parse_time(p["publish_at"]).astimezone(JST).hour in STORY_HOURS
+
+
+def publish_story(ig_id: str, p: dict) -> str:
+    c = api("POST", f"{ig_id}/media", {"image_url": image_url(p, "story.jpg"), "media_type": "STORIES"})
+    wait_ready(c["id"])
+    return api("POST", f"{ig_id}/media_publish", {"creation_id": c["id"]})["id"]
+
+
+def stories_pass(ig_id: str, posts: list[dict], state: dict, now, dry_run: bool) -> int:
+    """公開済みの投稿のうち、ストーリーズにシェアする分を出す（失敗したら次の回に再挑戦、最大3回）"""
+    failures = 0
+    for p in posts:
+        info = state.get(p["_key"])
+        if not info or info.get("story_id") or info.get("story_tries", 0) >= 3 or not wants_story(p):
+            continue
+        if now - parse_time(p["publish_at"]) > dt.timedelta(hours=12):
+            continue
+        print(f"[ストーリーズ] {p['_key']}")
+        if dry_run:
+            print("  （テスト実行なので投稿しません）")
+            continue
+        try:
+            info["story_id"] = publish_story(ig_id, p)
+            print("  完了")
+        except ApiError as e:
+            info["story_tries"] = info.get("story_tries", 0) + 1
+            print(f"  失敗（{info['story_tries']}回目）: {e}")
+            if info["story_tries"] >= 3:
+                failures += 1
+        save_state(state)
+    return failures
+
+
 # ---------------------------------------------------------------- commands
 def cmd_validate(_args) -> int:
     bad = 0
@@ -264,6 +306,7 @@ def cmd_publish(args) -> int:
         except ApiError as e:
             print(f"  失敗: {e}")
             failures += 1
+    failures += stories_pass(ig_id, load_posts(), state, now, args.dry_run)
     return 1 if failures else 0
 
 
