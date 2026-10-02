@@ -5,6 +5,13 @@ on:
     - cron: "23 9 * * 1"   # 毎週月曜（トークンの有効期限は60日）
   workflow_dispatch:
 
+permissions:
+  contents: write
+
+concurrency:
+  group: instagram-publish
+  cancel-in-progress: false
+
 jobs:
   refresh:
     runs-on: ubuntu-latest
@@ -13,30 +20,25 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: トークンを延長
-        id: refresh
+      - name: トークンを延長して暗号化保存
         env:
           IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
+          IG_KEY: ${{ secrets.IG_ACCESS_TOKEN }}
         run: |
           python scripts/ig.py refresh --out "$RUNNER_TEMP/token.txt"
           echo "::add-mask::$(cat "$RUNNER_TEMP/token.txt")"
-          if [ "$(printf %s "$IG_ACCESS_TOKEN" | sha256sum)" = "$(tr -d '\n' < "$RUNNER_TEMP/token.txt" | sha256sum)" ]; then
-            echo "同じトークンのまま期限が延びました（GH_PAT は不要）"
-            echo "changed=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "新しいトークンが発行されました"
-            echo "changed=true" >> "$GITHUB_OUTPUT"
-          fi
-      - name: 新しいトークンを Secrets に保存
-        if: steps.refresh.outputs.changed == 'true'
-        env:
-          GH_TOKEN: ${{ secrets.GH_PAT }}
-        run: |
-          if [ -z "$GH_TOKEN" ]; then
-            echo "::error::新しいトークンが発行されたが GH_PAT が未設定なので保存できません。手順書の「トークン自動更新」を設定してください。"
-            rm -f "$RUNNER_TEMP/token.txt"
-            exit 1
-          fi
-          gh secret set IG_ACCESS_TOKEN --repo "${{ github.repository }}" < "$RUNNER_TEMP/token.txt"
+          # 新しいトークンを、Secrets のトークンを鍵にして暗号化（公開リポジトリには暗号文だけが残る）
+          openssl enc -aes-256-cbc -pbkdf2 -iter 200000 -salt -a -pass env:IG_KEY \
+            -in "$RUNNER_TEMP/token.txt" -out token.enc
           rm -f "$RUNNER_TEMP/token.txt"
-          echo "IG_ACCESS_TOKEN を更新しました"
+          git config user.name "insta-autopost"
+          git config user.email "actions@users.noreply.github.com"
+          git add token.enc
+          git commit -m "トークンを更新（暗号化）"
+          git pull --rebase --autostash
+          git push
+      - name: 新しいトークンで接続テスト
+        env:
+          IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
+          IG_USER_ID: ${{ secrets.IG_USER_ID }}
+        run: python scripts/ig.py check

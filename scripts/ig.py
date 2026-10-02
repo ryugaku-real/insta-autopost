@@ -55,16 +55,38 @@ class ApiError(Exception):
 
 
 # ---------------------------------------------------------------- API helpers
+_TOKEN_CACHE: list[str] = []
+
+
 def _token() -> str:
-    t = os.environ.get("IG_ACCESS_TOKEN", "").strip()
-    if not t:
+    """使うトークンを返す。token.enc があれば、Secrets のトークンを鍵にして復号した最新トークンを使う。"""
+    if _TOKEN_CACHE:
+        return _TOKEN_CACHE[0]
+    base = os.environ.get("IG_ACCESS_TOKEN", "").strip()
+    if not base:
         sys.exit("IG_ACCESS_TOKEN が設定されていません（GitHub Secrets を確認）")
-    return t
+    tok = base
+    enc = ROOT / "token.enc"
+    if enc.exists():
+        import subprocess
+        r = subprocess.run(["openssl", "enc", "-d", "-aes-256-cbc", "-pbkdf2", "-iter", "200000", "-a",
+                            "-pass", "env:IG_KEY", "-in", str(enc)],
+                           capture_output=True, text=True, env={**os.environ, "IG_KEY": base})
+        if r.returncode == 0 and r.stdout.strip():
+            tok = r.stdout.strip()
+        else:
+            print("  (token.enc を復号できなかったので Secrets のトークンを使います)")
+    if os.environ.get("GITHUB_ACTIONS"):
+        print(f"::add-mask::{tok}")
+    _TOKEN_CACHE.append(tok)
+    return tok
 
 
 def _redact(text: str) -> str:
-    t = os.environ.get("IG_ACCESS_TOKEN", "")
-    return text.replace(t, "***") if t else text
+    for t in [os.environ.get("IG_ACCESS_TOKEN", "")] + _TOKEN_CACHE:
+        if t:
+            text = text.replace(t, "***")
+    return text
 
 
 def api(method: str, path: str, params: dict | None = None, versioned: bool = True) -> dict:
