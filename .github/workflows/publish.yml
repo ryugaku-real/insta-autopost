@@ -32,10 +32,10 @@ jobs:
             sudo apt-get install -y -qq fonts-noto-cjk > /dev/null
             python scripts/render.py
           fi
-          if [ -n "$(git status --porcelain --untracked-files=all posts)" ]; then
+          if [ -n "$(git status --porcelain --untracked-files=all posts assets)" ]; then
             git config user.name "insta-autopost"
             git config user.email "actions@users.noreply.github.com"
-            git add posts
+            git add posts assets
             git commit -m "スライド画像を作成"
             git pull --rebase --autostash
             git push

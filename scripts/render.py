@@ -62,6 +62,72 @@ def font(bold: bool, size: int):
     return _cache[k]
 
 
+# ------------------------------------------------------------------ photos (Unsplash License)
+PHOTOS_JSON = ROOT / "assets" / "photos.json"
+PHOTO_DIR = ROOT / "assets" / "photos"
+RENDER_VERSION = 2   # 上げると、まだ公開していない投稿の画像を作り直す
+
+# 投稿フォルダ名のキーワード → 写真のジャンル
+TAG_RULES = [
+    (("juco", "apply", "class", "campus", "advisor", "two-weeks", "ask-me", "week-review", "friends"), "campus"),
+    (("credit", "bank", "card"), "card"),
+    (("cost", "save-money", "scholarship", "taxes", "tip", "sending-money", "work"), "money"),
+    (("supermarket", "grocery"), "grocery"),
+    (("dorm", "packing"), "dorm"),
+    (("det", "english-study", "schedule", "mind"), "study"),
+    (("before-go", "insurance"), "airport"),
+    (("license", "no-car"), "road"),
+    (("sim", "phrase-phone"), "phone"),
+    (("phrase-cafe", "phrase-shop"), "coffee"),
+    (("phrase-sports",), "baseball"),
+    (("phrase-email", "phrase-class", "phrase-question"), "library"),
+    (("phrase",), "books"),
+]
+
+
+def _photos() -> dict:
+    if not PHOTOS_JSON.exists():
+        return {}
+    return {k: v for k, v in json.loads(PHOTOS_JSON.read_text(encoding="utf-8")).items() if not k.startswith("_")}
+
+
+def pick_photo(folder_name: str, tag: str | None = None):
+    """写真を選んで (Image, 撮影者) を返す。なければ None。"""
+    import hashlib
+    import urllib.request
+    photos = _photos()
+    if not photos:
+        return None
+    if not tag:
+        key = folder_name.lower()
+        tag = next((t for words, t in TAG_RULES if any(w in key for w in words)), None)
+    if tag not in photos:
+        tag = sorted(photos)[int(hashlib.md5(folder_name.encode()).hexdigest(), 16) % len(photos)]
+    cands = photos[tag]
+    ph = cands[int(hashlib.md5(folder_name.encode()).hexdigest(), 16) % len(cands)]
+    PHOTO_DIR.mkdir(parents=True, exist_ok=True)
+    path = PHOTO_DIR / f"{ph['id']}.jpg"
+    if not path.exists():
+        url = f"https://images.unsplash.com/{ph['src']}?w=1080&h=1350&fit=crop&crop=entropy&q=80&fm=jpg"
+        try:
+            req = urllib.request.Request(url, headers={"User-Agent": "insta-autopost"})
+            with urllib.request.urlopen(req, timeout=60) as r:
+                path.write_bytes(r.read())
+        except Exception as e:
+            print(f"  (写真をダウンロードできませんでした: {ph['id']} {e})")
+            return None
+    try:
+        im = Image.open(path).convert("RGB")
+    except Exception:
+        return None
+    # 1080x1350 に中央トリミング
+    sw, sh = im.size
+    scale = max(W / sw, H / sh)
+    im = im.resize((int(sw * scale) + 1, int(sh * scale) + 1))
+    x, y = (im.width - W) // 2, (im.height - H) // 2
+    return im.crop((x, y, x + W, y + H)), ph.get("by", "")
+
+
 # ------------------------------------------------------------------ text
 NO_START = set("、。，．・：；？！ー）」』】〕〉》”’ぁぃぅぇぉっゃゅょゎァィゥェォッャュョヮ…‥%％,.!?:;)]}")
 TOKEN = re.compile(r"[A-Za-z0-9$%'’\-\.\,/&+#@]+|\s|.", re.S)
@@ -91,7 +157,8 @@ def fit(text: str, bold: bool, size: int, width: int, max_h: int, spacing=1.35, 
         f = font(bold, size)
         lines = wrap(text, f, width)
         h = int(len(lines) * size * spacing)
-        orphan = bold and len(lines) > 1 and len(lines[-1]) <= 2 and size > 40
+        wrapped = len(lines) > text.count("\n") + 1   # 自動で折り返した行があるか
+        orphan = bold and wrapped and len(lines) > 1 and len(lines[-1]) <= 2 and size > 40
         if (h <= max_h and not orphan) or size <= min_size:
             return f, lines, size, h
         size -= 2
@@ -122,8 +189,17 @@ def pill(d, text, cx, y, bg, fg, size=34):
 
 
 # ------------------------------------------------------------------ slide types
-def s_cover(s, idx, total):
+def s_cover(s, idx, total, folder_name=""):
     im = Image.new("RGB", (W, H), NAVY)
+    if s.get("photo") is not False:
+        got = pick_photo(folder_name, s.get("photo") if isinstance(s.get("photo"), str) else None)
+        if got:
+            photo, by = got
+            shade = Image.new("RGB", (W, H), NAVY)
+            im = Image.blend(photo, shade, 0.72)
+            if by:
+                ImageDraw.Draw(im).text((W - 70 - font(False, 22).getlength(f"Photo: {by} / Unsplash"), 78),
+                                        f"Photo: {by} / Unsplash", font=font(False, 22), fill=SOFT)
     d = ImageDraw.Draw(im)
     d.text((70, 70), BRAND, font=font(True, 34), fill=SOFT)
     if s.get("label"):
@@ -261,6 +337,8 @@ TYPES = {"cover": s_cover, "point": s_point, "list": s_list, "phrase": s_phrase,
 # ------------------------------------------------------------------ main
 def targets(force=False):
     out = []
+    pub = ROOT / "published.json"
+    published = json.loads(pub.read_text(encoding="utf-8")) if pub.exists() else {}
     for pj in sorted(POSTS.glob("*/post.json")):
         p = json.loads(pj.read_text(encoding="utf-8"))
         slides = p.get("slides")
@@ -268,6 +346,8 @@ def targets(force=False):
             continue
         names = [f"{i:02d}.jpg" for i in range(1, len(slides) + 1)]
         missing = force or any(not (pj.parent / n).exists() for n in names) or p.get("images") != names
+        if p.get("render_v") != RENDER_VERSION and pj.parent.name not in published:
+            missing = True  # デザイン更新：まだ公開していない投稿だけ作り直す
         if missing:
             out.append((pj, p, names))
     return out
@@ -283,10 +363,12 @@ def main() -> int:
     for pj, p, names in todo:
         slides = p["slides"]
         for i, s in enumerate(slides, 1):
-            im = TYPES[s.get("type", "point")](s, i, len(slides))
+            kind = s.get("type", "point")
+            im = s_cover(s, i, len(slides), pj.parent.name) if kind == "cover" else TYPES[kind](s, i, len(slides))
             im.save(pj.parent / names[i - 1], quality=90, optimize=True)
-        if p.get("images") != names:
+        if p.get("images") != names or p.get("render_v") != RENDER_VERSION:
             p["images"] = names
+            p["render_v"] = RENDER_VERSION
             pj.write_text(json.dumps(p, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
         print(f"作成: {pj.parent.name}（{len(names)}枚）")
         make_story(pj.parent)

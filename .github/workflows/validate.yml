@@ -6,6 +6,7 @@ on:
       - "posts/**"
       - "scripts/render.py"
       - "tools/**"
+      - "assets/photos.json"
   workflow_dispatch:
 
 permissions:
@@ -33,10 +34,10 @@ jobs:
           fi
       - name: 画像を保存
         run: |
-          if [ -n "$(git status --porcelain --untracked-files=all posts)" ]; then
+          if [ -n "$(git status --porcelain --untracked-files=all posts assets)" ]; then
             git config user.name "insta-autopost"
             git config user.email "actions@users.noreply.github.com"
-            git add posts
+            git add posts assets
             git commit -m "スライド画像を作成"
             git pull --rebase --autostash
             git push
