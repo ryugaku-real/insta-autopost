@@ -6,6 +6,9 @@
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
     "ios": { "supportsTablet": true },
-    "android": {}
+    "android": {},
+    "extra": {
+      "dataUrl": "https://raw.githubusercontent.com/ryugaku-real/insta-autopost/main/college-sports-app/public-data/schools.json"
+    }
   }
 }

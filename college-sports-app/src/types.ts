@@ -34,6 +34,8 @@ export interface School {
   website: string;
   /** Athletics department site, when known (NCAA schools) */
   athleticsUrl?: string;
+  /** Direct link to the scholarship / international admissions page (from data/overrides.json) */
+  scholarshipUrl?: string;
   /** false = needs manual verification against the official site */
   verified: boolean;
 }

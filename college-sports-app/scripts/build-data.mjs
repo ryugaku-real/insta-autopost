@@ -4,7 +4,7 @@
 //
 //   SCORECARD_API_KEY=xxxx node scripts/build-data.mjs
 //   (free key: https://api.data.gov/signup/)
-import { writeFileSync, existsSync, readFileSync } from 'node:fs';
+import { writeFileSync, existsSync, readFileSync, mkdirSync } from 'node:fs';
 
 const key = process.env.SCORECARD_API_KEY;
 if (!key) { console.error('Set SCORECARD_API_KEY'); process.exit(1); }
@@ -27,6 +27,8 @@ if (existsSync('data/athletics.csv')) {
   }
 }
 
+// manual fixes for fast-changing facts: { "<unitid>": { conference, athleticsUrl, scholarshipUrl, ... } }
+const overrides = existsSync('data/overrides.json') ? JSON.parse(readFileSync('data/overrides.json', 'utf8')) : {};
 const out = [];
 for (let page = 0; ; page++) {
   const url = `https://api.data.gov/ed/collegescorecard/v1/schools.json?api_key=${key}&per_page=100&page=${page}` +
@@ -51,5 +53,9 @@ for (let page = 0; ; page++) {
   }
   if ((page + 1) * 100 >= metadata.total) break;
 }
-writeFileSync('src/data/schools.generated.json', JSON.stringify(out, null, 1));
+for (const sc of out) Object.assign(sc, overrides[sc.id] ?? {});
+mkdirSync('public-data', { recursive: true });
+const updatedAt = new Date().toISOString();
+writeFileSync('public-data/schools.json', JSON.stringify({ updatedAt, schools: out }));
+writeFileSync('src/data/schools.generated.json', JSON.stringify(out)); // bundled fallback for offline first launch
 console.log(`wrote ${out.length} schools`);

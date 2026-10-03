@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { FlatList, Linking, Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
-import { schools } from './src/data/schools';
+import { useSchools } from './src/data/useSchools';
 import { Division, School } from './src/types';
 import { aidRules } from './src/data/aidRules';
 import { stateJa } from './src/data/states';
@@ -14,6 +14,7 @@ const DIVISIONS: { key: Division | 'ALL'; label: string }[] = [
 ];
 
 export default function App() {
+  const { schools, updatedAt, source } = useSchools();
   const [query, setQuery] = useState('');
   const [division, setDivision] = useState<Division | 'ALL'>('ALL');
   const [level, setLevel] = useState<'ALL' | '4year' | '2year'>('ALL');
@@ -23,11 +24,11 @@ export default function App() {
   const [conference, setConference] = useState<string | null>(null);
   const [picker, setPicker] = useState<'state' | 'conf' | null>(null);
 
-  const states = useMemo(() => [...new Set(schools.map((x) => x.state))].sort(), []);
+  const states = useMemo(() => [...new Set(schools.map((x) => x.state))].sort(), [schools]);
   // conferences available for the currently chosen division (conference data exists for NCAA schools only)
   const conferences = useMemo(
     () => [...new Set(schools.filter((x) => division === 'ALL' || x.division === division).map((x) => x.conference).filter((c): c is string => !!c))].sort(),
-    [division]);
+    [division, schools]);
 
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -39,7 +40,7 @@ export default function App() {
       (!scholarshipOnly || sc.athleticScholarship) &&
       (!q || [sc.name, sc.nameJa ?? '', sc.state, sc.city, ...sc.sports.flatMap((x) => [x.name, x.nameJa])]
         .some((t) => t.toLowerCase().includes(q))));
-  }, [query, division, level, scholarshipOnly, state, conference]);
+  }, [schools, query, division, level, scholarshipOnly, state, conference]);
 
   if (selected) return <Detail school={selected} onBack={() => setSelected(null)} />;
 
@@ -74,7 +75,7 @@ export default function App() {
           <Pressable onPress={() => setPicker(null)}><Text style={st.link}>閉じる</Text></Pressable>
         </View>
       </Modal>
-      <Text style={st.count}>{results.length} 校</Text>
+      <Text style={st.count}>{results.length} 校 ・ データ更新: {updatedAt ? updatedAt.slice(0, 10) : '同梱版'}{source === 'remote' ? '(最新)' : ''}</Text>
       <FlatList data={results} keyExtractor={(x) => x.id} renderItem={({ item }) => (
         <Pressable style={st.card} onPress={() => setSelected(item)}>
           <Text style={st.name}>{item.nameJa ?? item.name}</Text>
@@ -150,7 +151,7 @@ function Detail({ school: sc, onBack }: { school: School; onBack: () => void }) 
       <Text style={[st.name, { marginTop: 12 }]}>リンク(タップで開く)</Text>
       <LinkRow icon="🏫" label="学校の公式サイト" desc="学部・学費・キャンパスなど学校全体の情報" url={sc.website} />
       <LinkRow icon="🏅" label="運動部(アスレチックス)サイト" desc={sc.athleticsUrl ? 'チームのスケジュール・コーチ・選手募集の連絡先' : '運動部の公式サイトをGoogleで探します'} url={sc.athleticsUrl ?? google(`${sc.name} athletics official site`)} />
-      <LinkRow icon="💰" label="スカラーシップ(奨学金)を探す" desc="この学校のサイト内から、運動奨学金・留学生向け奨学金のページを検索します" url={google(`site:${host(sc.website)} athletic scholarship international student`)} />
+      <LinkRow icon="💰" label={sc.scholarshipUrl ? 'スカラーシップ(奨学金)ページ' : 'スカラーシップ(奨学金)を探す'} desc={sc.scholarshipUrl ? '運動奨学金・留学生向け奨学金の案内ページ' : 'この学校のサイト内から、運動奨学金・留学生向け奨学金のページを検索します'} url={sc.scholarshipUrl ?? google(`site:${host(sc.website)} athletic scholarship international student`)} />
       <LinkRow icon="✈️" label="留学生の出願ページを探す" desc="出願方法・必要書類・英語スコアなど留学生向けの案内を検索します" url={google(`site:${host(sc.website)} international admissions`)} />
       {!sc.verified && <Text style={st.warn}>※ データ出典: 米国教育省 EADA 2024-25 / College Scorecard。奨学金・競技は年度で変わるため、出願前に必ず公式サイトで確認してください。</Text>}
     </View>
