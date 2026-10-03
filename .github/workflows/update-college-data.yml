@@ -24,8 +24,6 @@ jobs:
       - run: node scripts/fetch-ncaa.mjs
       - run: python3 scripts/build-athletics.py eada/schools.xlsx eada/instLevel.xlsx
       - run: node scripts/build-data.mjs
-        env:
-          SCORECARD_API_KEY: ${{ secrets.SCORECARD_API_KEY }}
       - name: Commit if changed
         run: |
           git config user.name "college-data-bot"
