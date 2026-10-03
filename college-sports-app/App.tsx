@@ -59,6 +59,32 @@ export default function App() {
 const host = (u: string) => u.replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0];
 const google = (q: string) => `https://www.google.com/search?q=${encodeURIComponent(q)}`;
 
+function LinkRow({ icon, label, desc, url }: { icon: string; label: string; desc: string; url: string }) {
+  return (
+    <Pressable onPress={() => Linking.openURL(url)} style={st.linkBox}>
+      <Text style={st.link}>{icon} {label}</Text>
+      <Text style={st.linkDesc}>{desc}</Text>
+    </Pressable>
+  );
+}
+
+const LEVEL_EXPLAIN: Record<string, string> = {
+  D1: 'NCAAで最も競技レベルが高いクラス', D2: 'NCAAの中間クラスで、奨学金が分割で出やすい',
+  D3: 'NCAAの学業重視クラス(運動奨学金は出ません)', NAIA: 'NCAAとは別の大学リーグで、小規模校が中心',
+  'NJCAA-D1': '短大リーグの最上位でフル奨学金も可能。4年制への編入ルートにもなる',
+  'NJCAA-D2': '短大リーグの中位(授業料までの奨学金)', 'NJCAA-D3': '短大リーグ(運動奨学金なし)',
+  CCCAA: 'カリフォルニア州の公立短大リーグ(運動奨学金なし)', NWAC: '北西部(ワシントン・オレゴン等)の短大リーグ',
+};
+
+function summarize(sc: School) {
+  const sports = sc.sports.slice(0, 5).map((x) => x.nameJa).join('・');
+  const aid = sc.athleticAid && sc.athleticAid.total > 0 ? `運動部への奨学金は年間およそ$${Math.round(sc.athleticAid.total / 1000).toLocaleString()}K。` : '';
+  return `${sc.state}州の${sc.control === 'public' ? '公立' : '私立'}${sc.level === '4year' ? '4年制大学' : '短大'}。` +
+    `${sc.association} ${sc.division}所属(${LEVEL_EXPLAIN[sc.division]})。` +
+    `${sports ? `競技は${sports}など${sc.sports.length}種目。` : ''}` +
+    `運動奨学金は${sc.athleticScholarship ? 'あり' : 'なし'}。${aid}`;
+}
+
 function Chip({ label, on, onPress }: { label: string; on: boolean; onPress: () => void }) {
   return (
     <Pressable onPress={onPress} style={[st.chip, on && st.chipOn]}>
@@ -74,6 +100,10 @@ function Detail({ school: sc, onBack }: { school: School; onBack: () => void }) 
       <Pressable onPress={onBack}><Text style={st.link}>← 戻る</Text></Pressable>
       <Text style={st.title}>{sc.nameJa ?? sc.name}</Text>
       <Text style={st.sub}>{sc.name}</Text>
+      <View style={st.summary}>
+        <Text style={st.name}>ひとことで言うと</Text>
+        <Text style={st.meta}>{summarize(sc)}</Text>
+      </View>
       <Text style={st.meta}>所在地: {sc.city}, {sc.state}</Text>
       <Text style={st.meta}>種別: {sc.level === '4year' ? '4年制' : '短大'} / {sc.control === 'public' ? '公立' : '私立'}</Text>
       <Text style={st.meta}>所属: {sc.association} / {sc.division}{sc.conference ? ` / ${sc.conference}` : ''}</Text>
@@ -87,14 +117,11 @@ function Detail({ school: sc, onBack }: { school: School; onBack: () => void }) 
       <Text style={[st.name, { marginTop: 12 }]}>スポーツ</Text>
       {sc.sports.map((x) => (
         <Text key={x.name} style={st.meta}>・{x.nameJa} ({x.name}) {x.gender === 'M' ? '男子' : x.gender === 'W' ? '女子' : '男女'}</Text>))}
-      <Text style={[st.name, { marginTop: 12 }]}>リンク</Text>
-      <Pressable onPress={() => Linking.openURL(sc.website)}><Text style={st.linkRow}>🏫 学校の公式サイト</Text></Pressable>
-      <Pressable onPress={() => Linking.openURL(sc.athleticsUrl ?? google(`${sc.name} athletics official site`))}>
-        <Text style={st.linkRow}>🏅 運動部(アスレチックス)サイト</Text></Pressable>
-      <Pressable onPress={() => Linking.openURL(google(`site:${host(sc.website)} athletic scholarship international student`))}>
-        <Text style={st.linkRow}>💰 スカラーシップ(奨学金)ページを探す</Text></Pressable>
-      <Pressable onPress={() => Linking.openURL(google(`site:${host(sc.website)} international admissions`))}>
-        <Text style={st.linkRow}>✈️ 留学生の出願ページを探す</Text></Pressable>
+      <Text style={[st.name, { marginTop: 12 }]}>リンク(タップで開く)</Text>
+      <LinkRow icon="🏫" label="学校の公式サイト" desc="学部・学費・キャンパスなど学校全体の情報" url={sc.website} />
+      <LinkRow icon="🏅" label="運動部(アスレチックス)サイト" desc={sc.athleticsUrl ? 'チームのスケジュール・コーチ・選手募集の連絡先' : '運動部の公式サイトをGoogleで探します'} url={sc.athleticsUrl ?? google(`${sc.name} athletics official site`)} />
+      <LinkRow icon="💰" label="スカラーシップ(奨学金)を探す" desc="この学校のサイト内から、運動奨学金・留学生向け奨学金のページを検索します" url={google(`site:${host(sc.website)} athletic scholarship international student`)} />
+      <LinkRow icon="✈️" label="留学生の出願ページを探す" desc="出願方法・必要書類・英語スコアなど留学生向けの案内を検索します" url={google(`site:${host(sc.website)} international admissions`)} />
       {!sc.verified && <Text style={st.warn}>※ データ出典: 米国教育省 EADA 2024-25 / College Scorecard。奨学金・競技は年度で変わるため、出願前に必ず公式サイトで確認してください。</Text>}
     </SafeAreaView>
   );
@@ -112,5 +139,5 @@ const st = StyleSheet.create({
   count: { color: '#666', marginBottom: 6 },
   card: { borderWidth: 1, borderColor: '#e2e2e2', borderRadius: 10, padding: 12, marginBottom: 10 },
   name: { fontSize: 16, fontWeight: '600' }, sub: { color: '#666', marginBottom: 4 },
-  meta: { color: '#333', marginTop: 2 }, link: { color: '#06c', fontSize: 16 }, linkRow: { color: '#06c', fontSize: 16, paddingVertical: 8 }, warn: { color: '#c60', marginTop: 16 },
+  meta: { color: '#333', marginTop: 2 }, link: { color: '#06c', fontSize: 16 }, linkBox: { paddingVertical: 8 }, linkDesc: { color: '#666', fontSize: 13, marginTop: 2 }, summary: { backgroundColor: '#f2f8f4', borderRadius: 8, padding: 12, marginVertical: 8 }, linkRow: { color: '#06c', fontSize: 16, paddingVertical: 8 }, warn: { color: '#c60', marginTop: 16 },
 });
