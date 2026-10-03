@@ -12,7 +12,7 @@ if (!key) { console.error('Set SCORECARD_API_KEY'); process.exit(1); }
 const fields = [
   'id', 'school.name', 'school.city', 'school.state', 'school.school_url', 'school.ownership',
   'school.degrees_awarded.predominant', 'location.lat', 'location.lon',
-  'latest.cost.tuition.in_state', 'latest.cost.tuition.out_of_state',
+  'latest.cost.tuition.in_state', 'latest.cost.tuition.out_of_state', 'latest.cost.avg_net_price.overall',
 ].join(',');
 
 const dom = (u) => (u ?? '').toLowerCase().replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0];
@@ -42,7 +42,7 @@ for (let page = 0; ; page++) {
       control: r['school.ownership'] === 1 ? 'public' : 'private', city: r['school.city'], state: r['school.state'],
       lat: r['location.lat'], lng: r['location.lon'], ...a,
       conference: conf.get(dom(r['school.school_url'])) || undefined,
-      tuitionInState: r['latest.cost.tuition.in_state'], tuitionOutOfState: r['latest.cost.tuition.out_of_state'],
+      avgNetPrice: r['latest.cost.avg_net_price.overall'], tuitionInState: r['latest.cost.tuition.in_state'], tuitionOutOfState: r['latest.cost.tuition.out_of_state'],
       athleticScholarship: ['D1', 'D2', 'NJCAA-D1', 'NJCAA-D2', 'NAIA'].includes(a.division),
       scholarshipNote: a.division === 'D3' || a.division === 'NJCAA-D3' ? 'D3はアスリート奨学金なし(学業・ニーズ型のみ)' : a.association === 'CCCAA' || a.association === 'NWAC' ? `${a.association}は原則アスリート奨学金なし` : a.association === 'NCAA' ? 'アスリート奨学金は競技・学校により異なります(Ivy Leagueなど例外あり)' : 'アスリート奨学金は競技・学校により異なります',
       website: `https://${r['school.school_url']}`, verified: false,

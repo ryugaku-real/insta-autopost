@@ -1,7 +1,7 @@
 """Convert the U.S. Dept. of Education EADA dataset into data/athletics.json (keyed by unitid).
 
 Source: https://ope.ed.gov/athletics/#/datafile/list  -> "Data for academic year 2024-25" (EADA_2024-2025.zip)
-Usage:  python3 scripts/build-athletics.py path/to/schools.xlsx
+Usage:  python3 scripts/build-athletics.py path/to/schools.xlsx path/to/instLevel.xlsx
 Covers NCAA D1/D2/D3, NAIA, NJCAA D1-D3, CCCAA, NWAC (sports + men/women participation).
 """
 import json, sys, openpyxl
@@ -37,5 +37,15 @@ for r in it:
         continue
     e = out.setdefault(str(r[ix['unitid']]), {'association': cls[0], 'division': cls[1], 'sports': []})
     e['sports'].append({'name': sport, 'nameJa': JA[sport], 'gender': 'Both' if men and women else 'M' if men else 'W'})
+# athletic student aid (USD, institution level) from instLevel.xlsx
+ws2 = openpyxl.load_workbook(sys.argv[2], read_only=True).active
+it2 = ws2.iter_rows(values_only=True)
+ix2 = {k: i for i, k in enumerate(next(it2))}
+for r in it2:
+    e = out.get(str(r[ix2['unitid']]))
+    if not e:
+        continue
+    g = lambda k: r[ix2[k]] or 0
+    e['athleticAid'] = {'total': g('STUDENTAID_TOTAL'), 'men': g('STUDENTAID_MEN'), 'women': g('STUDENTAID_WOMEN'), 'coed': g('STUDENTAID_COED')}
 json.dump(out, open('data/athletics.json', 'w'), ensure_ascii=False, indent=0)
 print(len(out), 'schools')

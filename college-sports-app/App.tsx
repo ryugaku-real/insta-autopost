@@ -3,6 +3,7 @@ import { FlatList, Linking, Pressable, SafeAreaView, StyleSheet, Text, TextInput
 import { StatusBar } from 'expo-status-bar';
 import { schools } from './src/data/schools';
 import { Division, School } from './src/types';
+import { aidRules } from './src/data/aidRules';
 
 const DIVISIONS: { key: Division | 'ALL'; label: string }[] = [
   { key: 'ALL', label: 'すべて' }, { key: 'D1', label: 'NCAA D1' }, { key: 'D2', label: 'NCAA D2' },
@@ -75,7 +76,11 @@ function Detail({ school: sc, onBack }: { school: School; onBack: () => void }) 
       <Text style={st.meta}>所属: {sc.association} / {sc.division}{sc.conference ? ` / ${sc.conference}` : ''}</Text>
       <Text style={st.meta}>学費(年): 州内 {money(sc.tuitionInState)} / 州外 {money(sc.tuitionOutOfState)}</Text>
       <Text style={st.meta}>アスリート奨学金: {sc.athleticScholarship ? 'あり' : 'なし'}</Text>
-      {sc.scholarshipNote && <Text style={st.meta}>{sc.scholarshipNote}</Text>}
+      {sc.avgNetPrice != null && <Text style={st.meta}>平均ネットプライス(奨学金差引後・米国学生): {money(sc.avgNetPrice)}/年</Text>}
+      {sc.athleticAid && sc.athleticAid.total > 0 && (
+        <Text style={st.meta}>運動部への奨学金総額(年): {money(sc.athleticAid.total)}(男子 {money(sc.athleticAid.men)} / 女子 {money(sc.athleticAid.women)})</Text>)}
+      <Text style={[st.name, { marginTop: 12 }]}>奨学金ルール({aidRules[sc.division].title})</Text>
+      {aidRules[sc.division].points.map((t) => <Text key={t} style={st.meta}>・{t}</Text>)}
       <Text style={[st.name, { marginTop: 12 }]}>スポーツ</Text>
       {sc.sports.map((x) => (
         <Text key={x.name} style={st.meta}>・{x.nameJa} ({x.name}) {x.gender === 'M' ? '男子' : x.gender === 'W' ? '女子' : '男女'}</Text>))}
