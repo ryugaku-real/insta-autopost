@@ -2,35 +2,13 @@
 // (location, public/private, 2yr/4yr, tuition). Athletic data (association,
 // division, sports) comes from data/athletics.json (see scripts/build-athletics.py, EADA data).
 //
-//   node scripts/build-data.mjs   (no API key needed: uses the College Scorecard bulk CSV)
+//   node scripts/build-data.mjs   (no API key needed: uses data/scorecard.json)
 import { writeFileSync, existsSync, readFileSync, mkdirSync } from 'node:fs';
-import { execSync } from 'node:child_process';
 
-// College Scorecard bulk file (no API key needed): https://collegescorecard.ed.gov/data/
+// College Scorecard institution data. CI runners get HTTP 403 from the Scorecard download hosts, so the needed
+// columns are kept in data/scorecard.json (refresh ~yearly with `npm run refresh:scorecard`, run from a normal machine).
 async function loadScorecard() {
-  if (!existsSync('scorecard/Most-Recent-Cohorts-Institution.csv')) {
-    const page = await (await fetch('https://collegescorecard.ed.gov/data/')).text();
-    const url = page.match(/https:\/\/ed-public-download[^"']*Most-Recent-Cohorts-Institution[^"']*\.zip/)?.[0];
-    if (!url) throw new Error('Scorecard institution file link not found');
-    console.log('downloading', url);
-    execSync(`rm -rf scorecard && mkdir scorecard && curl -sSfL "${url}" -o scorecard/sc.zip && unzip -q -o scorecard/sc.zip -d scorecard`, { stdio: 'inherit' });
-  }
-  return parseCsv(readFileSync('scorecard/Most-Recent-Cohorts-Institution.csv', 'utf8'));
-}
-
-function parseCsv(text) {
-  const rows = []; let row = [], f = '', q = false;
-  for (let i = 0; i < text.length; i++) {
-    const ch = text[i];
-    if (q) { if (ch === '"') { if (text[i + 1] === '"') { f += '"'; i++; } else q = false; } else f += ch; }
-    else if (ch === '"') q = true;
-    else if (ch === ',') { row.push(f); f = ''; }
-    else if (ch === '\n') { row.push(f.replace(/\r$/, '')); rows.push(row); row = []; f = ''; }
-    else f += ch;
-  }
-  if (f || row.length) { row.push(f); rows.push(row); }
-  const h = rows.shift().map((x) => x.replace(/^\uFEFF/, ''));
-  return rows.filter((r) => r.length === h.length).map((r) => Object.fromEntries(h.map((k, i) => [k, r[i]])));
+  return JSON.parse(readFileSync('data/scorecard.json', 'utf8')).rows;
 }
 
 const dom = (u) => (u ?? '').toLowerCase().replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0];
