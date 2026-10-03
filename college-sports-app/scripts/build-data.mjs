@@ -13,7 +13,7 @@ async function loadScorecard() {
     const FALLBACK = 'https://ed-public-download.scorecard.network/downloads/Most-Recent-Cohorts-Institution_06102026.zip';
     let url = FALLBACK;
     try {
-      const res = await fetch('https://collegescorecard.ed.gov/data/', { headers: { 'User-Agent': 'Mozilla/5.0 (college-sports-app data build)' } });
+      const res = await fetch('https://collegescorecard.ed.gov/data/');
       url = (await res.text()).match(/https:\/\/ed-public-download[^"'\s]*Most-Recent-Cohorts-Institution[^"'\s]*\.zip/)?.[0] ?? FALLBACK;
       if (url === FALLBACK) console.warn(`link not found on data page (HTTP ${res.status}); using fallback file`);
     } catch (e) { console.warn('data page fetch failed; using fallback file:', e.message); }
