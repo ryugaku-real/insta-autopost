@@ -7,7 +7,7 @@
 
 ## データの更新(アプリを出したあとも更新できる)
 1. **自動更新**: `.github/workflows/update-college-data.yml` が毎週月曜に最新データ(EADA・NCAA・College Scorecard)を取得し、`public-data/schools.json` を更新します。
-   - APIキーは不要です(College Scorecardの公開CSVを使用)。
+   - APIキーは不要です。場所・学費(College Scorecard)は `data/scorecard.json` に保存してあります(GitHubのサーバーからは配布元が403で取れないため)。年1回ほど、普通のPCで `npm run refresh:scorecard` を実行して更新してください。
 2. **アプリ側**: 起動時に `app.json` の `extra.dataUrl` からJSONを取得して表示します(失敗時は端末キャッシュ→同梱データ)。ストア審査なしで反映されます。
    - `dataUrl` はアプリから読める公開URLにしてください(リポジトリが非公開の場合は GitHub Pages などで `public-data/` を公開)。
 3. **手動修正**: すぐ変わる情報(カンファレンス、奨学金ページURLなど)は `data/overrides.json` に `unitid` をキーにして書けば、次の更新でも上書きされず反映されます。
