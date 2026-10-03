@@ -9,6 +9,11 @@ posts/
     post.json           ← 公開日時・キャプション・画像の順番
     01.jpg 02.jpg ...   ← カルーセルの画像（JPGだけ・最大10枚）
 published.json          ← 投稿済みの記録（自動で更新される。触らない）
+token.enc               ← 自動更新された最新トークン（暗号化済み。自動で更新される。触らない）
+assets/photos.json      ← スライドで使う写真の一覧（Unsplash）
+scripts/                ← 投稿・スライド画像作成のプログラム（ig.py / render.py）
+tools/make_posts.py     ← 投稿データ（post.json）をまとめて作るツール
+.github/workflows/      ← GitHub Actions の設定（自動投稿・チェック・トークン更新）
 ```
 
 ---
