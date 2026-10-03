@@ -6,6 +6,8 @@
 import { writeFileSync, existsSync, readFileSync, mkdirSync } from 'node:fs';
 import { execSync } from 'node:child_process';
 
+const UA = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36';
+
 // College Scorecard bulk file (no API key needed): https://collegescorecard.ed.gov/data/
 async function loadScorecard() {
   if (!existsSync('scorecard/Most-Recent-Cohorts-Institution.csv')) {
@@ -13,13 +15,13 @@ async function loadScorecard() {
     const FALLBACK = 'https://ed-public-download.scorecard.network/downloads/Most-Recent-Cohorts-Institution_06102026.zip';
     let url = FALLBACK;
     try {
-      const res = await fetch('https://collegescorecard.ed.gov/data/');
+      const res = await fetch('https://collegescorecard.ed.gov/data/', { headers: { 'User-Agent': UA, Accept: 'text/html' } });
       const found = (await res.text()).match(/https:\/\/ed-public-download[^"'\s]*Most-Recent-Cohorts-Institution[^"'\s]*\.zip/)?.[0];
       if (found) url = found;
       else console.warn(`link not found on data page (HTTP ${res.status}); using fallback file`);
     } catch (e) { console.warn('data page fetch failed; using fallback file:', e.message); }
     console.log('downloading', url);
-    execSync(`rm -rf scorecard && mkdir scorecard && curl -sSfL "${url}" -o scorecard/sc.zip && unzip -q -o scorecard/sc.zip -d scorecard`, { stdio: 'inherit' });
+    execSync(`rm -rf scorecard && mkdir scorecard && curl -sSfL -A "${UA}" -e https://collegescorecard.ed.gov/data/ "${url}" -o scorecard/sc.zip && unzip -q -o scorecard/sc.zip -d scorecard`, { stdio: 'inherit' });
   }
   return parseCsv(readFileSync('scorecard/Most-Recent-Cohorts-Institution.csv', 'utf8'));
 }
