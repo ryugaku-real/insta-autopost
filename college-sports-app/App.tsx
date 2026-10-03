@@ -7,7 +7,8 @@ import { Division, School } from './src/types';
 const DIVISIONS: { key: Division | 'ALL'; label: string }[] = [
   { key: 'ALL', label: 'すべて' }, { key: 'D1', label: 'NCAA D1' }, { key: 'D2', label: 'NCAA D2' },
   { key: 'D3', label: 'NCAA D3' }, { key: 'NAIA', label: 'NAIA' }, { key: 'NJCAA-D1', label: 'NJCAA D1' },
-  { key: 'NJCAA-D2', label: 'NJCAA D2' }, { key: 'CCCAA', label: 'CCCAA' },
+  { key: 'NJCAA-D2', label: 'NJCAA D2' }, { key: 'NJCAA-D3', label: 'NJCAA D3' },
+  { key: 'CCCAA', label: 'CCCAA(CA)' }, { key: 'NWAC', label: 'NWAC(北西部)' },
 ];
 
 export default function App() {
@@ -79,7 +80,7 @@ function Detail({ school: sc, onBack }: { school: School; onBack: () => void }) 
       {sc.sports.map((x) => (
         <Text key={x.name} style={st.meta}>・{x.nameJa} ({x.name}) {x.gender === 'M' ? '男子' : x.gender === 'W' ? '女子' : '男女'}</Text>))}
       <Pressable onPress={() => Linking.openURL(sc.website)}><Text style={[st.link, { marginTop: 12 }]}>公式サイト</Text></Pressable>
-      {!sc.verified && <Text style={st.warn}>※ 未検証データ。出願前に必ず公式サイトで確認してください。</Text>}
+      {!sc.verified && <Text style={st.warn}>※ データ出典: 米国教育省 EADA 2024-25 / College Scorecard。奨学金・競技は年度で変わるため、出願前に必ず公式サイトで確認してください。</Text>}
     </SafeAreaView>
   );
 }

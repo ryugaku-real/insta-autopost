@@ -1,8 +1,6 @@
 // Builds the full school list from the free U.S. College Scorecard API
 // (location, public/private, 2yr/4yr, tuition). Athletic data (association,
-// division, sports) is NOT in Scorecard — merge from data/athletics.csv
-// (columns: domain,association,division,conference,sports; NCAA rows via scripts/fetch-ncaa.mjs) compiled from
-// NCAA / NAIA / NJCAA / CCCAA / NWAC official membership lists.
+// division, sports) comes from data/athletics.json (see scripts/build-athletics.py, EADA data).
 //
 //   SCORECARD_API_KEY=xxxx node scripts/build-data.mjs
 //   (free key: https://api.data.gov/signup/)
@@ -18,11 +16,14 @@ const fields = [
 ].join(',');
 
 const dom = (u) => (u ?? '').toLowerCase().replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0];
-const ath = new Map();
+// unitid -> { association, division, sports } from scripts/build-athletics.py (EADA data)
+const ath = new Map(Object.entries(JSON.parse(readFileSync('data/athletics.json', 'utf8'))));
+// optional: NCAA conference names by website domain from scripts/fetch-ncaa.mjs
+const conf = new Map();
 if (existsSync('data/athletics.csv')) {
   for (const line of readFileSync('data/athletics.csv', 'utf8').trim().split('\n').slice(1)) {
-    const [domain, association, division, conference, sports] = line.split(',');
-    ath.set(domain, { association, division, conference, sports: (sports ?? '').split('|').filter(Boolean) });
+    const [domain, , , conference] = line.split(',');
+    conf.set(domain, conference);
   }
 }
 
@@ -34,15 +35,16 @@ for (let page = 0; ; page++) {
   if (!res.ok) throw new Error(`${res.status} ${await res.text()}`);
   const { results, metadata } = await res.json();
   for (const r of results) {
-    const a = ath.get(dom(r['school.school_url']));
+    const a = ath.get(String(r.id));
     if (!a) continue; // only schools with a known athletic program
     out.push({
       id: String(r.id), name: r['school.name'], level: r['school.degrees_awarded.predominant'] === 3 ? '4year' : '2year',
       control: r['school.ownership'] === 1 ? 'public' : 'private', city: r['school.city'], state: r['school.state'],
       lat: r['location.lat'], lng: r['location.lon'], ...a,
+      conference: conf.get(dom(r['school.school_url'])) || undefined,
       tuitionInState: r['latest.cost.tuition.in_state'], tuitionOutOfState: r['latest.cost.tuition.out_of_state'],
-      athleticScholarship: ['D1', 'D2'].includes(a.division) || a.association === 'NJCAA',
-      scholarshipNote: a.division === 'D3' ? 'D3はアスリート奨学金なし(学業・ニーズ型のみ)' : 'D1/D2はアスリート奨学金あり(競技・学校により異なる。Ivy Leagueなど例外あり)',
+      athleticScholarship: ['D1', 'D2', 'NJCAA-D1', 'NJCAA-D2', 'NAIA'].includes(a.division),
+      scholarshipNote: a.division === 'D3' || a.division === 'NJCAA-D3' ? 'D3はアスリート奨学金なし(学業・ニーズ型のみ)' : a.association === 'CCCAA' || a.association === 'NWAC' ? `${a.association}は原則アスリート奨学金なし` : a.association === 'NCAA' ? 'アスリート奨学金は競技・学校により異なります(Ivy Leagueなど例外あり)' : 'アスリート奨学金は競技・学校により異なります',
       website: `https://${r['school.school_url']}`, verified: false,
     });
   }
