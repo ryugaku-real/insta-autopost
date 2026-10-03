@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { FlatList, Linking, Pressable, SafeAreaView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { FlatList, Linking, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { schools } from './src/data/schools';
 import { Division, School } from './src/types';
@@ -32,7 +32,7 @@ export default function App() {
   if (selected) return <Detail school={selected} onBack={() => setSelected(null)} />;
 
   return (
-    <SafeAreaView style={st.root}>
+    <View style={st.root}>
       <StatusBar style="auto" />
       <Text style={st.title}>アメリカ大学スポーツ検索</Text>
       <TextInput style={st.input} placeholder="学校名・州・スポーツで検索 (例: 野球, CA)" value={query} onChangeText={setQuery} />
@@ -52,7 +52,7 @@ export default function App() {
           <Text style={st.meta}>{item.city}, {item.state} ・ {item.level === '4year' ? '4年制' : '短大'} ・ {item.association} {item.division}</Text>
           <Text style={st.meta}>{item.sports.length ? item.sports.map((x) => x.nameJa).join('・') : '競技情報: 準備中'}</Text>
         </Pressable>)} />
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -80,7 +80,7 @@ function summarize(sc: School) {
   const sports = sc.sports.slice(0, 5).map((x) => x.nameJa).join('・');
   const aid = sc.athleticAid && sc.athleticAid.total > 0 ? `運動部への奨学金は年間およそ$${Math.round(sc.athleticAid.total / 1000).toLocaleString()}K。` : '';
   return `${sc.state}州の${sc.control === 'public' ? '公立' : '私立'}${sc.level === '4year' ? '4年制大学' : '短大'}。` +
-    `${sc.association} ${sc.division}所属(${LEVEL_EXPLAIN[sc.division]})。` +
+    `${sc.division.startsWith(sc.association) ? sc.division : `${sc.association} ${sc.division}`}所属(${LEVEL_EXPLAIN[sc.division]})。` +
     `${sports ? `競技は${sports}など${sc.sports.length}種目。` : ''}` +
     `運動奨学金は${sc.athleticScholarship ? 'あり' : 'なし'}。${aid}`;
 }
@@ -96,7 +96,7 @@ function Chip({ label, on, onPress }: { label: string; on: boolean; onPress: () 
 function Detail({ school: sc, onBack }: { school: School; onBack: () => void }) {
   const money = (n: number | null) => (n == null ? '未確認' : `$${n.toLocaleString()}`);
   return (
-    <SafeAreaView style={st.root}>
+    <View style={st.root}>
       <Pressable onPress={onBack}><Text style={st.link}>← 戻る</Text></Pressable>
       <Text style={st.title}>{sc.nameJa ?? sc.name}</Text>
       <Text style={st.sub}>{sc.name}</Text>
@@ -123,7 +123,7 @@ function Detail({ school: sc, onBack }: { school: School; onBack: () => void }) 
       <LinkRow icon="💰" label="スカラーシップ(奨学金)を探す" desc="この学校のサイト内から、運動奨学金・留学生向け奨学金のページを検索します" url={google(`site:${host(sc.website)} athletic scholarship international student`)} />
       <LinkRow icon="✈️" label="留学生の出願ページを探す" desc="出願方法・必要書類・英語スコアなど留学生向けの案内を検索します" url={google(`site:${host(sc.website)} international admissions`)} />
       {!sc.verified && <Text style={st.warn}>※ データ出典: 米国教育省 EADA 2024-25 / College Scorecard。奨学金・競技は年度で変わるため、出願前に必ず公式サイトで確認してください。</Text>}
-    </SafeAreaView>
+    </View>
   );
 }
 
