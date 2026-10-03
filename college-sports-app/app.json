@@ -8,7 +8,7 @@
     "ios": { "supportsTablet": true },
     "android": {},
     "extra": {
-      "dataUrl": "https://raw.githubusercontent.com/ryugaku-real/insta-autopost/main/college-sports-app/public-data/schools.json"
+      "dataUrl": "https://raw.githubusercontent.com/ryugaku-real/college-sports-data/main/public-data/schools.json"
     }
   }
 }
