@@ -32,6 +32,8 @@ export interface School {
   athleticScholarship: boolean;
   scholarshipNote?: string;
   website: string;
+  /** Athletics department site, when known (NCAA schools) */
+  athleticsUrl?: string;
   /** false = needs manual verification against the official site */
   verified: boolean;
 }

@@ -56,6 +56,9 @@ export default function App() {
   );
 }
 
+const host = (u: string) => u.replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0];
+const google = (q: string) => `https://www.google.com/search?q=${encodeURIComponent(q)}`;
+
 function Chip({ label, on, onPress }: { label: string; on: boolean; onPress: () => void }) {
   return (
     <Pressable onPress={onPress} style={[st.chip, on && st.chipOn]}>
@@ -84,7 +87,14 @@ function Detail({ school: sc, onBack }: { school: School; onBack: () => void }) 
       <Text style={[st.name, { marginTop: 12 }]}>スポーツ</Text>
       {sc.sports.map((x) => (
         <Text key={x.name} style={st.meta}>・{x.nameJa} ({x.name}) {x.gender === 'M' ? '男子' : x.gender === 'W' ? '女子' : '男女'}</Text>))}
-      <Pressable onPress={() => Linking.openURL(sc.website)}><Text style={[st.link, { marginTop: 12 }]}>公式サイト</Text></Pressable>
+      <Text style={[st.name, { marginTop: 12 }]}>リンク</Text>
+      <Pressable onPress={() => Linking.openURL(sc.website)}><Text style={st.linkRow}>🏫 学校の公式サイト</Text></Pressable>
+      <Pressable onPress={() => Linking.openURL(sc.athleticsUrl ?? google(`${sc.name} athletics official site`))}>
+        <Text style={st.linkRow}>🏅 運動部(アスレチックス)サイト</Text></Pressable>
+      <Pressable onPress={() => Linking.openURL(google(`site:${host(sc.website)} athletic scholarship international student`))}>
+        <Text style={st.linkRow}>💰 スカラーシップ(奨学金)ページを探す</Text></Pressable>
+      <Pressable onPress={() => Linking.openURL(google(`site:${host(sc.website)} international admissions`))}>
+        <Text style={st.linkRow}>✈️ 留学生の出願ページを探す</Text></Pressable>
       {!sc.verified && <Text style={st.warn}>※ データ出典: 米国教育省 EADA 2024-25 / College Scorecard。奨学金・競技は年度で変わるため、出願前に必ず公式サイトで確認してください。</Text>}
     </SafeAreaView>
   );
@@ -102,5 +112,5 @@ const st = StyleSheet.create({
   count: { color: '#666', marginBottom: 6 },
   card: { borderWidth: 1, borderColor: '#e2e2e2', borderRadius: 10, padding: 12, marginBottom: 10 },
   name: { fontSize: 16, fontWeight: '600' }, sub: { color: '#666', marginBottom: 4 },
-  meta: { color: '#333', marginTop: 2 }, link: { color: '#06c', fontSize: 16 }, warn: { color: '#c60', marginTop: 16 },
+  meta: { color: '#333', marginTop: 2 }, link: { color: '#06c', fontSize: 16 }, linkRow: { color: '#06c', fontSize: 16, paddingVertical: 8 }, warn: { color: '#c60', marginTop: 16 },
 });

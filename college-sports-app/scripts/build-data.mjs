@@ -22,8 +22,8 @@ const ath = new Map(Object.entries(JSON.parse(readFileSync('data/athletics.json'
 const conf = new Map();
 if (existsSync('data/athletics.csv')) {
   for (const line of readFileSync('data/athletics.csv', 'utf8').trim().split('\n').slice(1)) {
-    const [domain, , , conference] = line.split(',');
-    conf.set(domain, conference);
+    const [domain, , , conference, , athleticUrl] = line.split(',');
+    conf.set(domain, { conference, athleticUrl });
   }
 }
 
@@ -41,11 +41,12 @@ for (let page = 0; ; page++) {
       id: String(r.id), name: r['school.name'], level: r['school.degrees_awarded.predominant'] === 3 ? '4year' : '2year',
       control: r['school.ownership'] === 1 ? 'public' : 'private', city: r['school.city'], state: r['school.state'],
       lat: r['location.lat'], lng: r['location.lon'], ...a,
-      conference: conf.get(dom(r['school.school_url'])) || undefined,
+      conference: conf.get(dom(r['school.school_url']))?.conference || undefined,
+      athleticsUrl: conf.get(dom(r['school.school_url']))?.athleticUrl ? `https://${conf.get(dom(r['school.school_url'])).athleticUrl}` : undefined,
       avgNetPrice: r['latest.cost.avg_net_price.overall'], tuitionInState: r['latest.cost.tuition.in_state'], tuitionOutOfState: r['latest.cost.tuition.out_of_state'],
       athleticScholarship: ['D1', 'D2', 'NJCAA-D1', 'NJCAA-D2', 'NAIA'].includes(a.division),
       scholarshipNote: a.division === 'D3' || a.division === 'NJCAA-D3' ? 'D3はアスリート奨学金なし(学業・ニーズ型のみ)' : a.association === 'CCCAA' || a.association === 'NWAC' ? `${a.association}は原則アスリート奨学金なし` : a.association === 'NCAA' ? 'アスリート奨学金は競技・学校により異なります(Ivy Leagueなど例外あり)' : 'アスリート奨学金は競技・学校により異なります',
-      website: `https://${r['school.school_url']}`, verified: false,
+      website: /^https?:/.test(r['school.school_url']) ? r['school.school_url'] : `https://${r['school.school_url']}`, verified: false,
     });
   }
   if ((page + 1) * 100 >= metadata.total) break;
