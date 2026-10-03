@@ -48,7 +48,7 @@ export default function App() {
           <Text style={st.name}>{item.nameJa ?? item.name}</Text>
           <Text style={st.sub}>{item.name}</Text>
           <Text style={st.meta}>{item.city}, {item.state} ・ {item.level === '4year' ? '4年制' : '短大'} ・ {item.association} {item.division}</Text>
-          <Text style={st.meta}>{item.sports.map((x) => x.nameJa).join('・')}</Text>
+          <Text style={st.meta}>{item.sports.length ? item.sports.map((x) => x.nameJa).join('・') : '競技情報: 準備中'}</Text>
         </Pressable>)} />
     </SafeAreaView>
   );
