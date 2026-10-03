@@ -1,0 +1,14 @@
+{
+  "expo": {
+    "name": "College Sports Finder",
+    "slug": "college-sports-finder",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "ios": { "supportsTablet": true },
+    "android": {},
+    "extra": {
+      "dataUrl": "https://raw.githubusercontent.com/ryugaku-real/insta-autopost/main/college-sports-app/public-data/schools.json"
+    }
+  }
+}

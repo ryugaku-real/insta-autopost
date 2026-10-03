@@ -1,0 +1,4 @@
+{
+  "_README": "学校ごとの手動修正。キーはunitid(アプリの学校IDと同じ)。例: \"243744\": { \"conference\": \"ACC\", \"scholarshipUrl\": \"https://...\" }。毎回のデータ更新後に上書きされます。",
+  "243744": { "scholarshipUrl": "https://financialaid.stanford.edu/" }
+}
