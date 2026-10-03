@@ -1,9 +1,10 @@
 import { useMemo, useState } from 'react';
-import { FlatList, Linking, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { FlatList, Linking, Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { schools } from './src/data/schools';
 import { Division, School } from './src/types';
 import { aidRules } from './src/data/aidRules';
+import { stateJa } from './src/data/states';
 
 const DIVISIONS: { key: Division | 'ALL'; label: string }[] = [
   { key: 'ALL', label: 'すべて' }, { key: 'D1', label: 'NCAA D1' }, { key: 'D2', label: 'NCAA D2' },
@@ -18,16 +19,27 @@ export default function App() {
   const [level, setLevel] = useState<'ALL' | '4year' | '2year'>('ALL');
   const [scholarshipOnly, setScholarshipOnly] = useState(false);
   const [selected, setSelected] = useState<School | null>(null);
+  const [state, setState] = useState<string | null>(null);
+  const [conference, setConference] = useState<string | null>(null);
+  const [picker, setPicker] = useState<'state' | 'conf' | null>(null);
+
+  const states = useMemo(() => [...new Set(schools.map((x) => x.state))].sort(), []);
+  // conferences available for the currently chosen division (conference data exists for NCAA schools only)
+  const conferences = useMemo(
+    () => [...new Set(schools.filter((x) => division === 'ALL' || x.division === division).map((x) => x.conference).filter((c): c is string => !!c))].sort(),
+    [division]);
 
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();
     return schools.filter((sc) =>
       (division === 'ALL' || sc.division === division) &&
       (level === 'ALL' || sc.level === level) &&
+      (!state || sc.state === state) &&
+      (!conference || sc.conference === conference) &&
       (!scholarshipOnly || sc.athleticScholarship) &&
       (!q || [sc.name, sc.nameJa ?? '', sc.state, sc.city, ...sc.sports.flatMap((x) => [x.name, x.nameJa])]
         .some((t) => t.toLowerCase().includes(q))));
-  }, [query, division, level, scholarshipOnly]);
+  }, [query, division, level, scholarshipOnly, state, conference]);
 
   if (selected) return <Detail school={selected} onBack={() => setSelected(null)} />;
 
@@ -38,12 +50,30 @@ export default function App() {
       <TextInput style={st.input} placeholder="学校名・州・スポーツで検索 (例: 野球, CA)" value={query} onChangeText={setQuery} />
       <FlatList horizontal showsHorizontalScrollIndicator={false} data={DIVISIONS} keyExtractor={(d) => d.key}
         style={st.chips} renderItem={({ item }) => (
-          <Chip label={item.label} on={division === item.key} onPress={() => setDivision(item.key)} />)} />
+          <Chip label={item.label} on={division === item.key} onPress={() => { setDivision(item.key); setConference(null); }} />)} />
       <View style={st.row}>
         <Chip label="4年制" on={level === '4year'} onPress={() => setLevel(level === '4year' ? 'ALL' : '4year')} />
         <Chip label="短大" on={level === '2year'} onPress={() => setLevel(level === '2year' ? 'ALL' : '2year')} />
         <Chip label="アスリート奨学金あり" on={scholarshipOnly} onPress={() => setScholarshipOnly(!scholarshipOnly)} />
       </View>
+      <View style={st.row}>
+        <Chip label={state ? `州: ${stateJa[state] ?? state}` : '州で絞る ▾'} on={!!state} onPress={() => setPicker('state')} />
+        <Chip label={conference ? `リーグ: ${conference}` : 'リーグ(カンファレンス)で絞る ▾'} on={!!conference} onPress={() => setPicker('conf')} />
+      </View>
+      <Modal visible={picker !== null} animationType="slide" onRequestClose={() => setPicker(null)}>
+        <View style={st.root}>
+          <Text style={st.title}>{picker === 'state' ? '州を選ぶ' : 'リーグを選ぶ'}</Text>
+          {picker === 'conf' && <Text style={st.sub}>※ リーグ名はNCAA加盟校のみ。{division === 'ALL' ? '' : `${division}のリーグを表示中。`}</Text>}
+          <FlatList
+            data={[null, ...(picker === 'state' ? states : conferences)]}
+            keyExtractor={(x) => x ?? 'all'}
+            renderItem={({ item }) => (
+              <Pressable style={st.pickRow} onPress={() => { picker === 'state' ? setState(item) : setConference(item); setPicker(null); }}>
+                <Text style={st.name}>{item === null ? 'すべて' : picker === 'state' ? `${stateJa[item] ?? item} (${item})` : item}</Text>
+              </Pressable>)} />
+          <Pressable onPress={() => setPicker(null)}><Text style={st.link}>閉じる</Text></Pressable>
+        </View>
+      </Modal>
       <Text style={st.count}>{results.length} 校</Text>
       <FlatList data={results} keyExtractor={(x) => x.id} renderItem={({ item }) => (
         <Pressable style={st.card} onPress={() => setSelected(item)}>
@@ -139,5 +169,5 @@ const st = StyleSheet.create({
   count: { color: '#666', marginBottom: 6 },
   card: { borderWidth: 1, borderColor: '#e2e2e2', borderRadius: 10, padding: 12, marginBottom: 10 },
   name: { fontSize: 16, fontWeight: '600' }, sub: { color: '#666', marginBottom: 4 },
-  meta: { color: '#333', marginTop: 2 }, link: { color: '#06c', fontSize: 16 }, linkBox: { paddingVertical: 8 }, linkDesc: { color: '#666', fontSize: 13, marginTop: 2 }, summary: { backgroundColor: '#f2f8f4', borderRadius: 8, padding: 12, marginVertical: 8 }, linkRow: { color: '#06c', fontSize: 16, paddingVertical: 8 }, warn: { color: '#c60', marginTop: 16 },
+  meta: { color: '#333', marginTop: 2 }, link: { color: '#06c', fontSize: 16 }, pickRow: { paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#eee' }, linkBox: { paddingVertical: 8 }, linkDesc: { color: '#666', fontSize: 13, marginTop: 2 }, summary: { backgroundColor: '#f2f8f4', borderRadius: 8, padding: 12, marginVertical: 8 }, linkRow: { color: '#06c', fontSize: 16, paddingVertical: 8 }, warn: { color: '#c60', marginTop: 16 },
 });
