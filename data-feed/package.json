@@ -1,0 +1,10 @@
+{
+  "name": "college-sports-data",
+  "private": true,
+  "scripts": {
+    "download:eada": "node scripts/download-eada.mjs",
+    "fetch:ncaa": "node scripts/fetch-ncaa.mjs",
+    "build:data": "node scripts/build-data.mjs",
+    "refresh:scorecard": "node scripts/refresh-scorecard.mjs"
+  }
+}
