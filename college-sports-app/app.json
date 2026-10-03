@@ -1,0 +1,11 @@
+{
+  "expo": {
+    "name": "College Sports Finder",
+    "slug": "college-sports-finder",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "ios": { "supportsTablet": true },
+    "android": {}
+  }
+}
