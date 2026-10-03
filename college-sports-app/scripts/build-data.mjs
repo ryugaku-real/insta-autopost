@@ -14,8 +14,9 @@ async function loadScorecard() {
     let url = FALLBACK;
     try {
       const res = await fetch('https://collegescorecard.ed.gov/data/');
-      url = (await res.text()).match(/https:\/\/ed-public-download[^"'\s]*Most-Recent-Cohorts-Institution[^"'\s]*\.zip/)?.[0] ?? FALLBACK;
-      if (url === FALLBACK) console.warn(`link not found on data page (HTTP ${res.status}); using fallback file`);
+      const found = (await res.text()).match(/https:\/\/ed-public-download[^"'\s]*Most-Recent-Cohorts-Institution[^"'\s]*\.zip/)?.[0];
+      if (found) url = found;
+      else console.warn(`link not found on data page (HTTP ${res.status}); using fallback file`);
     } catch (e) { console.warn('data page fetch failed; using fallback file:', e.message); }
     console.log('downloading', url);
     execSync(`rm -rf scorecard && mkdir scorecard && curl -sSfL "${url}" -o scorecard/sc.zip && unzip -q -o scorecard/sc.zip -d scorecard`, { stdio: 'inherit' });
