@@ -5,6 +5,7 @@ import { useSchools } from './src/data/useSchools';
 import { Division, School } from './src/types';
 import { aidRules } from './src/data/aidRules';
 import { stateJa } from './src/data/states';
+import { CHEER_AID_NOTE, limitHeader, sportLimits } from './src/data/athleticLimits';
 
 const DIVISIONS: { key: Division | 'ALL'; label: string }[] = [
   { key: 'ALL', label: 'すべて' }, { key: 'D1', label: 'NCAA D1' }, { key: 'D2', label: 'NCAA D2' },
@@ -22,13 +23,21 @@ export default function App() {
   const [selected, setSelected] = useState<School | null>(null);
   const [state, setState] = useState<string | null>(null);
   const [conference, setConference] = useState<string | null>(null);
-  const [picker, setPicker] = useState<'state' | 'conf' | null>(null);
+  const [sport, setSport] = useState<string | null>(null);
+  const [picker, setPicker] = useState<'state' | 'conf' | 'sport' | null>(null);
 
   const states = useMemo(() => [...new Set(schools.map((x) => x.state))].sort(), [schools]);
   // conferences available for the currently chosen division (conference data exists for NCAA schools only)
   const conferences = useMemo(
     () => [...new Set(schools.filter((x) => division === 'ALL' || x.division === division).map((x) => x.conference).filter((c): c is string => !!c))].sort(),
     [division, schools]);
+
+  // every sport that appears in the data (incl. cheer/dance/stunt), most common first
+  const sportList = useMemo(() => {
+    const m = new Map<string, { ja: string; n: number }>();
+    for (const x of schools) for (const sp of x.sports) m.set(sp.name, { ja: sp.nameJa, n: (m.get(sp.name)?.n ?? 0) + 1 });
+    return [...m.entries()].sort((a, b) => b[1].n - a[1].n).map(([name, v]) => ({ name, ja: v.ja }));
+  }, [schools]);
 
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -37,10 +46,11 @@ export default function App() {
       (level === 'ALL' || sc.level === level) &&
       (!state || sc.state === state) &&
       (!conference || sc.conference === conference) &&
+      (!sport || sc.sports.some((x) => x.name === sport)) &&
       (!scholarshipOnly || sc.athleticScholarship) &&
       (!q || [sc.name, sc.nameJa ?? '', sc.state, sc.city, ...sc.sports.flatMap((x) => [x.name, x.nameJa])]
         .some((t) => t.toLowerCase().includes(q))));
-  }, [schools, query, division, level, scholarshipOnly, state, conference]);
+  }, [schools, query, division, level, scholarshipOnly, state, conference, sport]);
 
   if (selected) return <Detail school={selected} onBack={() => setSelected(null)} />;
 
@@ -60,17 +70,18 @@ export default function App() {
       <View style={st.row}>
         <Chip label={state ? `州: ${stateJa[state] ?? state}` : '州で絞る ▾'} on={!!state} onPress={() => setPicker('state')} />
         <Chip label={conference ? `リーグ: ${conference}` : 'リーグ(カンファレンス)で絞る ▾'} on={!!conference} onPress={() => setPicker('conf')} />
+        <Chip label={sport ? `競技: ${sportList.find((x) => x.name === sport)?.ja ?? sport}` : '競技で絞る(チア含む全競技) ▾'} on={!!sport} onPress={() => setPicker('sport')} />
       </View>
       <Modal visible={picker !== null} animationType="slide" onRequestClose={() => setPicker(null)}>
         <View style={st.root}>
-          <Text style={st.title}>{picker === 'state' ? '州を選ぶ' : 'リーグを選ぶ'}</Text>
+          <Text style={st.title}>{picker === 'state' ? '州を選ぶ' : picker === 'sport' ? '競技を選ぶ' : 'リーグを選ぶ'}</Text>
           {picker === 'conf' && <Text style={st.sub}>※ リーグ名はNCAA加盟校のみ。{division === 'ALL' ? '' : `${division}のリーグを表示中。`}</Text>}
           <FlatList
-            data={[null, ...(picker === 'state' ? states : conferences)]}
+            data={[null, ...(picker === 'state' ? states : picker === 'sport' ? sportList.map((x) => x.name) : conferences)]}
             keyExtractor={(x) => x ?? 'all'}
             renderItem={({ item }) => (
-              <Pressable style={st.pickRow} onPress={() => { picker === 'state' ? setState(item) : setConference(item); setPicker(null); }}>
-                <Text style={st.name}>{item === null ? 'すべて' : picker === 'state' ? `${stateJa[item] ?? item} (${item})` : item}</Text>
+              <Pressable style={st.pickRow} onPress={() => { picker === 'state' ? setState(item) : picker === 'sport' ? setSport(item) : setConference(item); setPicker(null); }}>
+                <Text style={st.name}>{item === null ? 'すべて' : picker === 'state' ? `${stateJa[item] ?? item} (${item})` : picker === 'sport' ? `${sportList.find((x) => x.name === item)?.ja ?? item} (${item})` : item}</Text>
               </Pressable>)} />
           <Pressable onPress={() => setPicker(null)}><Text style={st.link}>閉じる</Text></Pressable>
         </View>
@@ -140,6 +151,20 @@ function Detail({ school: sc, onBack }: { school: School; onBack: () => void }) 
       <Text style={st.meta}>所属: {sc.association} / {sc.division}{sc.conference ? ` / ${sc.conference}` : ''}</Text>
       <Text style={st.meta}>学費(年): 州内 {money(sc.tuitionInState)} / 州外 {money(sc.tuitionOutOfState)}</Text>
       <Text style={st.meta}>アスリート奨学金: {sc.athleticScholarship ? 'あり' : 'なし'}</Text>
+      {sc.athleticScholarshipMax && (
+        <View style={st.summary}>
+          <Text style={st.name}>アスリート奨学金の最大額</Text>
+          <Text style={st.meta}>{sc.athleticScholarshipMax}</Text>
+          {sportLimits(sc).length > 0 && (<>
+            <Text style={[st.linkDesc, { marginTop: 6 }]}>{limitHeader[sc.division]}</Text>
+            {sportLimits(sc).map((t) => <Text key={t} style={st.meta}>・{t}</Text>)}</>)}
+        </View>)}
+      {sc.cheerNote && (
+        <View style={st.summary}>
+          <Text style={st.name}>チア・ダンス・スタント</Text>
+          <Text style={st.meta}>{sc.cheerNote}</Text>
+          <Text style={st.linkDesc}>{CHEER_AID_NOTE}</Text>
+        </View>)}
       {sc.avgNetPrice != null && <Text style={st.meta}>平均ネットプライス(奨学金差引後・米国学生): {money(sc.avgNetPrice)}/年</Text>}
       {sc.athleticAid && sc.athleticAid.total > 0 && (
         <Text style={st.meta}>運動部への奨学金総額(年): {money(sc.athleticAid.total)}(男子 {money(sc.athleticAid.men)} / 女子 {money(sc.athleticAid.women)})</Text>)}

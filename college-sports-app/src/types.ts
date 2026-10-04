@@ -30,6 +30,10 @@ export interface School {
   avgNetPrice?: number | null;
   /** Does the school give athletic scholarships? (D3 and NCAA D1/D2 rules differ) */
   athleticScholarship: boolean;
+  /** Maximum athletic scholarship per athlete under this school's association/division rules (text) */
+  athleticScholarshipMax?: string;
+  /** Cheer / dance / stunt / acrobatics & tumbling programs (text), from the USA Cheer directory and NCAA/NAIA lists */
+  cheerNote?: string;
   scholarshipNote?: string;
   website: string;
   /** Athletics department site, when known (NCAA schools) */

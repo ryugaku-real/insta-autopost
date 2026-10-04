@@ -20,7 +20,8 @@ JA = {'Basketball': 'バスケットボール', 'Volleyball': 'バレーボー�
       'Rodeo': 'ロデオ', 'Equestrian': '馬術', 'Fencing': 'フェンシング', 'Rifle': 'ライフル', 'Skiing': 'スキー',
       'Squash': 'スカッシュ', 'Sailing': 'セーリング', 'Weight Lifting': 'ウエイトリフティング',
       'Archery': 'アーチェリー', 'Badminton': 'バドミントン', 'Table Tennis': '卓球', 'Diving': '飛込',
-      'Synchronized Swimming': 'アーティスティックスイミング'}
+      'Synchronized Swimming': 'アーティスティックスイミング',
+      'Other Sports': 'その他の競技(チア・ダンス等を含む場合あり)'}
 
 ws = openpyxl.load_workbook(sys.argv[1], read_only=True).active
 it = ws.iter_rows(values_only=True)
