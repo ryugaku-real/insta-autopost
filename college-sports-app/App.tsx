@@ -136,7 +136,7 @@ function Chip({ label, on, onPress }: { label: string; on: boolean; onPress: () 
 }
 
 function Detail({ school: sc, onBack }: { school: School; onBack: () => void }) {
-  const money = (n: number | null) => (n == null ? '未確認' : `$${n.toLocaleString()}`);
+  const money = (n: number | null) => (n == null ? '—' : `$${n.toLocaleString()}`);
   return (
     <View style={st.root}>
       <Pressable onPress={onBack}><Text style={st.link}>← 戻る</Text></Pressable>
@@ -151,23 +151,21 @@ function Detail({ school: sc, onBack }: { school: School; onBack: () => void }) 
       <Text style={st.meta}>所属: {sc.association} / {sc.division}{sc.conference ? ` / ${sc.conference}` : ''}</Text>
       <Text style={st.meta}>学費(年): 州内 {money(sc.tuitionInState)} / 州外 {money(sc.tuitionOutOfState)}</Text>
       <Text style={st.meta}>アスリート奨学金: {sc.athleticScholarship ? 'あり' : 'なし'}</Text>
-      {sc.athleticScholarshipMax && (
+      {(
         <View style={st.summary}>
           <Text style={st.name}>アスリート奨学金の最大額</Text>
-          <Text style={st.meta}>{sc.athleticScholarshipMax}</Text>
+          <Text style={st.meta}>{sc.athleticScholarshipMax || (sc.athleticScholarship ? '—' : '$0(運動奨学金なし)')}</Text>
           {sportLimits(sc).length > 0 && (<>
             <Text style={[st.linkDesc, { marginTop: 6 }]}>{limitHeader[sc.division]}</Text>
             {sportLimits(sc).map((t) => <Text key={t} style={st.meta}>・{t}</Text>)}</>)}
         </View>)}
-      {sc.cheerNote && (
-        <View style={st.summary}>
-          <Text style={st.name}>チア・ダンス・スタント</Text>
-          <Text style={st.meta}>{sc.cheerNote}</Text>
-          <Text style={st.linkDesc}>{CHEER_AID_NOTE}</Text>
-        </View>)}
-      {sc.avgNetPrice != null && <Text style={st.meta}>平均ネットプライス(奨学金差引後・米国学生): {money(sc.avgNetPrice)}/年</Text>}
-      {sc.athleticAid && sc.athleticAid.total > 0 && (
-        <Text style={st.meta}>運動部への奨学金総額(年): {money(sc.athleticAid.total)}(男子 {money(sc.athleticAid.men)} / 女子 {money(sc.athleticAid.women)})</Text>)}
+      <View style={st.summary}>
+        <Text style={st.name}>チア・ダンス・スタント</Text>
+        <Text style={st.meta}>{sc.cheerNote ?? '—'}</Text>
+        {!!sc.cheerNote && <Text style={st.linkDesc}>{CHEER_AID_NOTE}</Text>}
+      </View>
+      <Text style={st.meta}>平均ネットプライス(奨学金差引後・米国学生): {money(sc.avgNetPrice ?? null)}/年</Text>
+      <Text style={st.meta}>運動部への奨学金総額(年): {sc.athleticAid ? `${money(sc.athleticAid.total)}(男子 ${money(sc.athleticAid.men)} / 女子 ${money(sc.athleticAid.women)})` : '—'}</Text>
       {sc.tuitionLines && sc.tuitionLines.length > 0 && (
         <View style={st.summary}>
           <Text style={st.name}>学費・費用(留学生の目安)</Text>
