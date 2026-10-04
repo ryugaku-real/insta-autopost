@@ -184,6 +184,7 @@ function Detail({ school: sc, onBack }: { school: School; onBack: () => void }) 
               <Text style={st.meta}>{x.text}</Text>
             </View>))}
           <Text style={st.linkDesc}>確認日: {sc.intlAidCheckedAt ?? '不明'} ・ 最新は必ず学校の公式ページで確認してください</Text>
+          {!!sc.verifyNote && <Text style={st.linkDesc}>検証: {sc.verifyNote}</Text>}
         </View>
       ) : sc.intlAidNote ? (
         <View style={st.summary}>

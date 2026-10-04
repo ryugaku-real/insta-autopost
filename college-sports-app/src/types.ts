@@ -33,6 +33,8 @@ export interface School {
   /** Structured cost lines (tuition, room & board, books, total) and researched tuition note, built from Scorecard + per-school research */
   tuitionLines?: string[];
   tuitionResearch?: string;
+  /** Result of the automatic check of the researched note's amounts against the linked official page */
+  verifyNote?: string;
   /** Scholarship programs by category: federal/state, school (researched), athletic, outside */
   scholarshipSections?: { title: string; text: string }[];
   /** Maximum athletic scholarship per athlete under this school's association/division rules (text) */
