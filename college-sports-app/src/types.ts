@@ -40,6 +40,8 @@ export interface School {
   intlAidNote?: string;
   /** Date (YYYY-MM-DD) the note was checked against the school's site */
   intlAidCheckedAt?: string;
+  /** true = generic estimate generated from known data, not individually researched yet */
+  intlAidAuto?: boolean;
   /** false = needs manual verification against the official site */
   verified: boolean;
 }
