@@ -36,6 +36,10 @@ export interface School {
   athleticsUrl?: string;
   /** Direct link to the scholarship / international admissions page (from data/overrides.json) */
   scholarshipUrl?: string;
+  /** Researched notes on international-student aid/policies (from the data feed's overrides) */
+  intlAidNote?: string;
+  /** Date (YYYY-MM-DD) the note was checked against the school's site */
+  intlAidCheckedAt?: string;
   /** false = needs manual verification against the official site */
   verified: boolean;
 }
