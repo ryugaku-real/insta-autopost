@@ -30,6 +30,11 @@ export interface School {
   avgNetPrice?: number | null;
   /** Does the school give athletic scholarships? (D3 and NCAA D1/D2 rules differ) */
   athleticScholarship: boolean;
+  /** Structured cost lines (tuition, room & board, books, total) and researched tuition note, built from Scorecard + per-school research */
+  tuitionLines?: string[];
+  tuitionResearch?: string;
+  /** Scholarship programs by category: federal/state, school (researched), athletic, outside */
+  scholarshipSections?: { title: string; text: string }[];
   /** Maximum athletic scholarship per athlete under this school's association/division rules (text) */
   athleticScholarshipMax?: string;
   /** Cheer / dance / stunt / acrobatics & tumbling programs (text), from the USA Cheer directory and NCAA/NAIA lists */
