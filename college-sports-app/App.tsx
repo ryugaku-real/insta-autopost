@@ -155,9 +155,7 @@ function Detail({ school: sc, onBack }: { school: School; onBack: () => void }) 
         <View style={st.summary}>
           <Text style={st.name}>アスリート奨学金の最大額</Text>
           <Text style={st.meta}>{sc.athleticScholarshipMax || (sc.athleticScholarship ? '—' : '$0(運動奨学金なし)')}</Text>
-          {sportLimits(sc).length > 0 && (<>
-            <Text style={[st.linkDesc, { marginTop: 6 }]}>{limitHeader[sc.division]}</Text>
-            {sportLimits(sc).map((t) => <Text key={t} style={st.meta}>・{t}</Text>)}</>)}
+          <Text style={st.linkDesc}>実際の金額は選手ごとに異なります(最大額のみ表示)。</Text>
         </View>)}
       <View style={st.summary}>
         <Text style={st.name}>チア・ダンス・スタント</Text>
@@ -165,7 +163,6 @@ function Detail({ school: sc, onBack }: { school: School; onBack: () => void }) 
         {!!sc.cheerNote && <Text style={st.linkDesc}>{CHEER_AID_NOTE}</Text>}
       </View>
       <Text style={st.meta}>平均ネットプライス(奨学金差引後・米国学生): {money(sc.avgNetPrice ?? null)}/年</Text>
-      <Text style={st.meta}>運動部への奨学金総額(年): {sc.athleticAid ? `${money(sc.athleticAid.total)}(男子 ${money(sc.athleticAid.men)} / 女子 ${money(sc.athleticAid.women)})` : '—'}</Text>
       {sc.tuitionLines && sc.tuitionLines.length > 0 && (
         <View style={st.summary}>
           <Text style={st.name}>学費・費用(留学生の目安)</Text>
