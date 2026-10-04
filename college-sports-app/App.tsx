@@ -153,9 +153,10 @@ function Detail({ school: sc, onBack }: { school: School; onBack: () => void }) 
       <Text style={st.meta}>アスリート奨学金: {sc.athleticScholarship ? 'あり' : 'なし'}</Text>
       {(
         <View style={st.summary}>
-          <Text style={st.name}>アスリート奨学金の最大額</Text>
-          <Text style={st.meta}>{sc.athleticScholarshipMax || (sc.athleticScholarship ? '—' : '$0(運動奨学金なし)')}</Text>
-          <Text style={st.linkDesc}>実際の金額は選手ごとに異なります(最大額のみ表示)。</Text>
+          <Text style={st.name}>アスリート奨学金の最大割合</Text>
+          <Text style={st.meta}>{sc.athleticScholarshipPct == null ? '—' : sc.athleticScholarshipPct === 0 ? '0%(運動奨学金なし)' : `最大 ${sc.athleticScholarshipPct}%まで(総費用に対して)`}</Text>
+          {sc.athleticScholarshipPct != null && sc.athleticScholarshipPct > 0 && (
+            <Text style={st.linkDesc}>{sc.division === 'NJCAA-D2' ? '授業料・教材のみが対象のため、総費用に対する目安の割合です。' : sc.athleticScholarshipPct === 100 ? '全額まで可能ですが、実際はチームの上限内で選手ごとに異なり、部分奨学金が多いです。' : ''}</Text>)}
         </View>)}
       <View style={st.summary}>
         <Text style={st.name}>チア・ダンス・スタント</Text>

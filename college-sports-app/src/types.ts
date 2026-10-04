@@ -39,6 +39,7 @@ export interface School {
   scholarshipSections?: { title: string; text: string }[];
   /** Maximum athletic scholarship per athlete under this school's association/division rules (text) */
   athleticScholarshipMax?: string;
+  athleticScholarshipPct?: number | null;
   /** Cheer / dance / stunt / acrobatics & tumbling programs (text), from the USA Cheer directory and NCAA/NAIA lists */
   cheerNote?: string;
   scholarshipNote?: string;
