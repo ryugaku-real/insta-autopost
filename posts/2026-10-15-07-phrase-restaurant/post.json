@@ -1,0 +1,41 @@
+{
+  "draft": false,
+  "publish_at": "2026-10-15 07:00+09:00",
+  "story": false,
+  "caption": "レストランで使える英語フレーズ🍽️\n入店から注文、持ち帰り、お会計まで。この4つで乗り切れます。\n\n保存して、渡米したら使ってみてね！\n.\n.\n#英会話 #英語フレーズ #英語学習 #アメリカ留学 #留学準備 #留学生 #海外留学 #日常英会話 #英語勉強 #留学生活",
+  "slides": [
+    {
+      "type": "cover",
+      "label": "保存推奨",
+      "title": "レストランで\n使える\n英語フレーズ",
+      "sub": "入店からお会計まで"
+    },
+    {
+      "type": "phrase",
+      "en": "Can I get a table for two?",
+      "ja": "2人なんですが、席ありますか？",
+      "note": "お店に入ったとき"
+    },
+    {
+      "type": "phrase",
+      "en": "What do you recommend?",
+      "ja": "おすすめは何ですか？",
+      "note": "メニューで迷ったとき"
+    },
+    {
+      "type": "phrase",
+      "en": "Can I get a box?",
+      "ja": "持ち帰り用の箱をもらえますか？",
+      "note": "量が多くて食べきれないとき"
+    },
+    {
+      "type": "phrase",
+      "en": "Can we get the check, please?",
+      "ja": "お会計をお願いします",
+      "note": "食べ終わったら席で店員さんに"
+    },
+    {
+      "type": "cta"
+    }
+  ]
+}
