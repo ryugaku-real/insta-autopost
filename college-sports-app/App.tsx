@@ -143,6 +143,12 @@ function Detail({ school: sc, onBack }: { school: School; onBack: () => void }) 
       {sc.avgNetPrice != null && <Text style={st.meta}>平均ネットプライス(奨学金差引後・米国学生): {money(sc.avgNetPrice)}/年</Text>}
       {sc.athleticAid && sc.athleticAid.total > 0 && (
         <Text style={st.meta}>運動部への奨学金総額(年): {money(sc.athleticAid.total)}(男子 {money(sc.athleticAid.men)} / 女子 {money(sc.athleticAid.women)})</Text>)}
+      {sc.intlAidNote && (
+        <View style={st.summary}>
+          <Text style={st.name}>留学生向け情報(調査メモ)</Text>
+          <Text style={st.meta}>{sc.intlAidNote}</Text>
+          <Text style={st.linkDesc}>確認日: {sc.intlAidCheckedAt ?? '不明'} ・ 最新は必ず学校の公式ページで確認してください</Text>
+        </View>)}
       <Text style={[st.name, { marginTop: 12 }]}>奨学金ルール({aidRules[sc.division].title})</Text>
       {aidRules[sc.division].points.map((t) => <Text key={t} style={st.meta}>・{t}</Text>)}
       <Text style={[st.name, { marginTop: 12 }]}>スポーツ</Text>
