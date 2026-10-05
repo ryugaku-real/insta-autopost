@@ -15,6 +15,10 @@ const DIVISIONS: { key: Division | 'ALL'; label: string }[] = [
   { key: 'CCCAA', label: 'CCCAA(CA)' }, { key: 'NWAC', label: 'NWAC(北西部)' },
 ];
 
+const FREE_FAVS = 3;
+const FREE_CMP = 2;
+const PAID_CMP = 4;
+
 export default function App() {
   const { schools, updatedAt, source } = useSchools();
   const [query, setQuery] = useState('');
@@ -30,14 +34,34 @@ export default function App() {
   const [maxCost, setMaxCost] = useState<number | null>(null);
   const [favs, setFavs] = useState<string[]>([]);
   const [favOnly, setFavOnly] = useState(false);
+  const [premium, setPremium] = useState(false);
+  const [showPlan, setShowPlan] = useState(false);
+  const [lockHint, setLockHint] = useState<string | null>(null);
   const [cmp, setCmp] = useState<string[]>([]);
   const [showCmp, setShowCmp] = useState(false);
   const toggleIn = <T,>(set: (f: (c: T[]) => T[]) => void, v: T) => set((c) => (c.includes(v) ? c.filter((x) => x !== v) : [...c, v]));
   // cheer details are shown only while a cheer-type sport is selected in the sport filter
   const cheerSelected = sportSel.some((n) => ['Cheerleading', 'Dance', 'STUNT', 'Acrobatics & Tumbling'].includes(n));
-  const toggleCmp = (id: string) => setCmp((c) => c.includes(id) ? c.filter((x) => x !== id) : c.length >= 3 ? c : [...c, id]);
+  const cmpLimit = premium ? PAID_CMP : FREE_CMP;
+  const toggleCmp = (id: string) => {
+    if (!cmp.includes(id) && cmp.length >= cmpLimit) { setLockHint(premium ? `比較は${PAID_CMP}校までです。` : `比較は${FREE_CMP}校まで。${FREE_CMP + 1}校以上は有料プランです。`); return; }
+    setCmp((c) => (c.includes(id) ? c.filter((x) => x !== id) : [...c, id]));
+  };
+  // free plan: one value per filter (state / league / sport); premium: several at once
+  const pickToggle = (list: string[], setter: (v: string[]) => void, item: string) => {
+    if (list.includes(item)) { setter(list.filter((x) => x !== item)); return; }
+    if (premium || list.length === 0) { setter([...list, item]); return; }
+    setter([item]);
+    setLockHint('無料プランでは各項目1つまで。2つ以上を同時に選ぶには有料プランです。');
+  };
+  useEffect(() => { AsyncStorage.getItem('premium').then((v) => { if (v === '1') setPremium(true); }).catch(() => {}); }, []);
+  const setPremiumSaved = (v: boolean) => { setPremium(v); AsyncStorage.setItem('premium', v ? '1' : '0').catch(() => {}); };
   useEffect(() => { AsyncStorage.getItem('favs').then((v) => { if (v) setFavs(JSON.parse(v)); }).catch(() => {}); }, []);
-  const toggleFav = (id: string) => setFavs((cur) => {
+  const toggleFav = (id: string) => {
+    if (!favs.includes(id) && !premium && favs.length >= FREE_FAVS) { setLockHint(`お気に入りは無料プランでは${FREE_FAVS}校まで。無制限は有料プランです。`); return; }
+    toggleFavRaw(id);
+  };
+  const toggleFavRaw = (id: string) => setFavs((cur) => {
     const next = cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id];
     AsyncStorage.setItem('favs', JSON.stringify(next)).catch(() => {});
     return next;
@@ -76,13 +100,21 @@ export default function App() {
     return list;
   }, [schools, query, divisions, level, scholarshipOnly, stateSel, confSel, sportSel, maxCost, favOnly, favs, sortKey]);
 
+  if (showPlan) return <PlanScreen premium={premium} onSet={setPremiumSaved} onBack={() => setShowPlan(false)} />;
   if (showCmp) return <Compare showCheer={cheerSelected} list={schools.filter((x) => cmp.includes(x.id))} onBack={() => setShowCmp(false)} onRemove={toggleCmp} />;
-  if (selected) return <Detail school={selected} showCheer={cheerSelected} onBack={() => setSelected(null)} fav={favs.includes(selected.id)} onFav={() => toggleFav(selected.id)} />;
+  if (selected) return <Detail school={selected} premium={premium} onPlan={() => setShowPlan(true)} showCheer={cheerSelected} onBack={() => setSelected(null)} fav={favs.includes(selected.id)} onFav={() => toggleFav(selected.id)} />;
 
   return (
     <View style={st.root}>
       <StatusBar style="auto" />
-      <Text style={st.title}>アメリカ大学スポーツ検索</Text>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Text style={st.title}>アメリカ大学検索</Text>
+        <Pressable onPress={() => setShowPlan(true)}><Text style={st.link}>{premium ? '👑 有料プラン' : '無料プラン ▸'}</Text></Pressable>
+      </View>
+      {lockHint && (
+        <Pressable onPress={() => { setLockHint(null); setShowPlan(true); }} style={st.lockBar}>
+          <Text style={st.lockText}>🔒 {lockHint}(タップでプランを見る)</Text>
+        </Pressable>)}
       <TextInput style={st.input} placeholder="学校名・州・スポーツ・区分で検索 (例: 野球, CA, NCAA D1, NWAC)" placeholderTextColor="#888" value={query} onChangeText={setQuery} />
       <View style={st.row}>
         {DIVISIONS.map((item) => (
@@ -112,7 +144,7 @@ export default function App() {
       </View>
       <Modal visible={picker !== null} animationType="slide" onRequestClose={() => setPicker(null)}>
         <View style={st.root}>
-          <Text style={st.title}>{picker === 'state' ? '州を選ぶ(複数可)' : picker === 'sport' ? '競技を選ぶ(複数可・すべてに当てはまる学校)' : 'リーグを選ぶ(複数可)'}</Text>
+          <Text style={st.title}>{(picker === 'state' ? '州を選ぶ' : picker === 'sport' ? '競技を選ぶ' : 'リーグを選ぶ') + (premium ? '(複数可)' : '(無料プランは1つ)')}</Text>
           {picker === 'conf' && <Text style={st.sub}>※ リーグ名はNCAA加盟校のみ。{divisions.length === 0 ? '' : `${divisions.join('・')}のリーグを表示中。`}</Text>}
           <FlatList
             data={picker === 'state' ? states : picker === 'sport' ? sportList.map((x) => x.name) : conferences}
@@ -121,7 +153,7 @@ export default function App() {
               const sel = picker === 'state' ? stateSel : picker === 'sport' ? sportSel : confSel;
               const on = sel.includes(item);
               return (
-                <Pressable style={st.pickRow} onPress={() => toggleIn<string>(picker === 'state' ? setStateSel : picker === 'sport' ? setSportSel : setConfSel, item)}>
+                <Pressable style={st.pickRow} onPress={() => (picker === 'state' ? pickToggle(stateSel, setStateSel, item) : picker === 'sport' ? pickToggle(sportSel, setSportSel, item) : pickToggle(confSel, setConfSel, item))}>
                   <Text style={[st.name, on && { color: '#0a5' }]}>{on ? '✓ ' : ''}{picker === 'state' ? `${stateJa[item] ?? item} (${item})` : picker === 'sport' ? `${sportList.find((x) => x.name === item)?.ja ?? item} (${item})` : item}</Text>
                 </Pressable>);
             }} />
@@ -146,7 +178,7 @@ export default function App() {
           <Text style={st.sub}>{item.name}</Text>
           <Text style={st.meta}>{item.city}, {item.state} ・ {item.level === '4year' ? '4年制' : '短大'} ・ {item.division.startsWith(item.association) ? item.division : `${item.association} ${item.division}`}</Text>
           <Text style={st.meta}>州外学費 {item.tuitionOutOfState != null ? `$${item.tuitionOutOfState.toLocaleString()}` : '—'}/年 ・ アスリート奨学金 {item.athleticScholarshipPct == null ? '—' : `最大${item.athleticScholarshipPct}%`}</Text>
-          <Pressable onPress={() => toggleCmp(item.id)}><Text style={st.link}>{cmp.includes(item.id) ? '✓ 比較に追加済み(タップで外す)' : cmp.length >= 3 ? '比較は3校まで' : '＋ 比較に追加'}</Text></Pressable>
+          <Pressable onPress={() => toggleCmp(item.id)}><Text style={st.link}>{cmp.includes(item.id) ? '✓ 比較に追加済み(タップで外す)' : cmp.length >= cmpLimit ? `比較は${cmpLimit}校まで` : '＋ 比較に追加'}</Text></Pressable>
           <Text style={st.meta}>{item.sports.length ? item.sports.map((x) => x.nameJa).join('・') : '競技情報: 準備中'}</Text>
         </Pressable>)} />
     </View>
@@ -190,7 +222,7 @@ function Chip({ label, on, onPress }: { label: string; on: boolean; onPress: () 
   );
 }
 
-function Detail({ school: sc, onBack, fav, onFav, showCheer }: { school: School; onBack: () => void; fav: boolean; onFav: () => void; showCheer: boolean }) {
+function Detail({ school: sc, onBack, fav, onFav, showCheer, premium, onPlan }: { school: School; onBack: () => void; fav: boolean; onFav: () => void; showCheer: boolean; premium: boolean; onPlan: () => void }) {
   const money = (n: number | null) => (n == null ? '—' : `$${n.toLocaleString()}`);
   return (
     <ScrollView style={st.root} contentContainerStyle={{ paddingBottom: 48 }}>
@@ -209,6 +241,19 @@ function Detail({ school: sc, onBack, fav, onFav, showCheer }: { school: School;
       <Text style={st.meta}>所属: {sc.association} / {sc.division}{sc.conference ? ` / ${sc.conference}` : ''}</Text>
       <Text style={st.meta}>学費(年): 州内 {money(sc.tuitionInState)} / 州外 {money(sc.tuitionOutOfState)}</Text>
       <Text style={st.meta}>アスリート奨学金: {sc.athleticScholarship ? 'あり' : 'なし'}</Text>
+      <View style={st.summary}>
+        <Text style={st.name}>英語スコアの目安(留学生の出願)</Text>
+        {premium ? (
+          <>
+            <Text style={st.meta}>{sc.englishReq ?? 'この学校は未調査です(順次追加中)。'}</Text>
+            {!!sc.englishReq && <Text style={st.linkDesc}>確認日: {sc.englishCheckedAt ?? '不明'} ・ 年度や学部で変わるため、出願前に公式サイトで確認してください。</Text>}
+          </>
+        ) : (
+          <Pressable onPress={onPlan}>
+            <Text style={st.meta}>🔒 有料プランで、公式サイトを開かなくてもTOEFL・IELTSなどの目安をここで見られます。</Text>
+            <Text style={st.link}>プランを見る ▸</Text>
+          </Pressable>)}
+      </View>
       {(
         <View style={st.summary}>
           <Text style={st.name}>アスリート奨学金の最大割合</Text>
@@ -264,6 +309,42 @@ function Detail({ school: sc, onBack, fav, onFav, showCheer }: { school: School;
   );
 }
 
+function PlanScreen({ premium, onSet, onBack }: { premium: boolean; onSet: (v: boolean) => void; onBack: () => void }) {
+  const rows: [string, string, string][] = [
+    ['検索・区分(NCAA/NAIAなど)の絞り込み', '○', '○'],
+    ['州・リーグ・競技の絞り込み', '各1つ', '複数同時'],
+    ['お気に入り', `${FREE_FAVS}校`, '無制限'],
+    ['学校の比較', `${FREE_CMP}校`, `${PAID_CMP}校`],
+    ['英語スコア(TOEFL等)の目安をアプリ内で表示', '—', '○'],
+  ];
+  return (
+    <ScrollView style={st.root} contentContainerStyle={{ paddingBottom: 48 }}>
+      <Pressable onPress={onBack}><Text style={st.link}>← 戻る</Text></Pressable>
+      <Text style={st.title}>プラン</Text>
+      <View style={st.summary}>
+        <Text style={st.name}>有料プラン 月額 ¥500(仮)</Text>
+        <Text style={st.meta}>年額 ¥3,900(仮)・最初の7日間は無料(予定)</Text>
+        <Text style={st.linkDesc}>価格は検討中の仮の金額です。まだ決済はつながっていません。</Text>
+      </View>
+      {rows.map(([label, a, b]) => (
+        <View key={label} style={st.cmpRow}>
+          <Text style={[st.meta, { flex: 1 }]}>{label}</Text>
+          <Text style={[st.meta, { width: 64, textAlign: 'center' }]}>{a}</Text>
+          <Text style={[st.name, { width: 72, textAlign: 'center', color: '#0a5' }]}>{b}</Text>
+        </View>))}
+      <View style={[st.cmpRow, { borderBottomWidth: 0 }]}>
+        <Text style={[st.linkDesc, { flex: 1 }]}> </Text>
+        <Text style={[st.linkDesc, { width: 64, textAlign: 'center' }]}>無料</Text>
+        <Text style={[st.linkDesc, { width: 72, textAlign: 'center' }]}>有料</Text>
+      </View>
+      <Pressable style={st.cmpBar} onPress={() => onSet(!premium)}>
+        <Text style={st.chipTextOn}>{premium ? '無料プランに戻す(試用)' : '有料プランを試す(試用スイッチ・無料)'}</Text>
+      </Pressable>
+      <Text style={st.warn}>※ これは動作確認用の試用スイッチです。正式版では決済後に自動で有料になります。</Text>
+    </ScrollView>
+  );
+}
+
 function Compare({ list, onBack, onRemove, showCheer }: { list: School[]; onBack: () => void; onRemove: (id: string) => void; showCheer: boolean }) {
   const money = (n: number | null | undefined) => (n == null ? '—' : `$${n.toLocaleString()}`);
   const rows: { label: string; val: (x: School) => string }[] = [
@@ -304,6 +385,8 @@ function Compare({ list, onBack, onRemove, showCheer }: { list: School[]; onBack
 }
 
 const st = StyleSheet.create({
+  lockBar: { backgroundColor: '#fff4e5', borderRadius: 8, padding: 10, marginBottom: 8 },
+  lockText: { color: '#8a4b00' },
   cmpBar: { backgroundColor: '#0a5', borderRadius: 8, padding: 10, alignItems: 'center', marginBottom: 6 },
   cmpRow: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: '#eee', paddingVertical: 8 },
   cmpLabel: { width: 110 }, cmpCell: { width: 150, paddingRight: 8 },

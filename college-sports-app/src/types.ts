@@ -42,6 +42,9 @@ export interface School {
   athleticScholarshipPct?: number | null;
   /** Cheer / dance / stunt / acrobatics & tumbling programs (text), from the USA Cheer directory and NCAA/NAIA lists */
   cheerNote?: string;
+  /** Typical English-proficiency minimums for international applicants (TOEFL/IELTS/Duolingo...), researched per school */
+  englishReq?: string;
+  englishCheckedAt?: string;
   /** structured cheer flags: competitive team / game-day (sideline) / club-run / scholarship mentioned */
   cheerCompetitive?: boolean;
   cheerGameDay?: boolean;
