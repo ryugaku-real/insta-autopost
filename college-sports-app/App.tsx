@@ -31,6 +31,9 @@ export default function App() {
   const [maxCost, setMaxCost] = useState<number | null>(null);
   const [favs, setFavs] = useState<string[]>([]);
   const [favOnly, setFavOnly] = useState(false);
+  const [cmp, setCmp] = useState<string[]>([]);
+  const [showCmp, setShowCmp] = useState(false);
+  const toggleCmp = (id: string) => setCmp((c) => c.includes(id) ? c.filter((x) => x !== id) : c.length >= 3 ? c : [...c, id]);
   useEffect(() => { AsyncStorage.getItem('favs').then((v) => { if (v) setFavs(JSON.parse(v)); }).catch(() => {}); }, []);
   const toggleFav = (id: string) => setFavs((cur) => {
     const next = cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id];
@@ -70,6 +73,7 @@ export default function App() {
     return list;
   }, [schools, query, division, level, scholarshipOnly, state, conference, sport, cheerOnly, maxCost, favOnly, favs, sortKey]);
 
+  if (showCmp) return <Compare list={schools.filter((x) => cmp.includes(x.id))} onBack={() => setShowCmp(false)} onRemove={toggleCmp} />;
   if (selected) return <Detail school={selected} onBack={() => setSelected(null)} fav={favs.includes(selected.id)} onFav={() => toggleFav(selected.id)} />;
 
   return (
@@ -116,6 +120,7 @@ export default function App() {
           <Pressable onPress={() => setPicker(null)}><Text style={st.link}>閉じる</Text></Pressable>
         </View>
       </Modal>
+      {cmp.length > 0 && <Pressable onPress={() => setShowCmp(true)} style={st.cmpBar}><Text style={st.chipTextOn}>比較する({cmp.length}校) →</Text></Pressable>}
       <Text style={st.count}>{results.length} 校 ・ データ更新: {updatedAt ? updatedAt.slice(0, 10) : '同梱版'}{source === 'remote' ? '(最新)' : ''}</Text>
       <FlatList data={results} keyExtractor={(x) => x.id} renderItem={({ item }) => (
         <Pressable style={st.card} onPress={() => setSelected(item)}>
@@ -123,6 +128,7 @@ export default function App() {
           <Text style={st.sub}>{item.name}</Text>
           <Text style={st.meta}>{item.city}, {item.state} ・ {item.level === '4year' ? '4年制' : '短大'} ・ {item.division.startsWith(item.association) ? item.division : `${item.association} ${item.division}`}</Text>
           <Text style={st.meta}>州外学費 {item.tuitionOutOfState != null ? `$${item.tuitionOutOfState.toLocaleString()}` : '—'}/年 ・ 運動奨学金 {item.athleticScholarshipPct == null ? '—' : `最大${item.athleticScholarshipPct}%`}{item.cheerNote ? ' ・ チアあり' : ''}</Text>
+          <Pressable onPress={() => toggleCmp(item.id)}><Text style={st.link}>{cmp.includes(item.id) ? '✓ 比較に追加済み(タップで外す)' : cmp.length >= 3 ? '比較は3校まで' : '＋ 比較に追加'}</Text></Pressable>
           <Text style={st.meta}>{item.sports.length ? item.sports.map((x) => x.nameJa).join('・') : '競技情報: 準備中'}</Text>
         </Pressable>)} />
     </View>
@@ -229,6 +235,7 @@ function Detail({ school: sc, onBack, fav, onFav }: { school: School; onBack: ()
       {sc.sports.map((x) => (
         <Text key={x.name} style={st.meta}>・{x.nameJa} ({x.name}) {x.gender === 'M' ? '男子' : x.gender === 'W' ? '女子' : '男女'}</Text>))}
       <Text style={[st.name, { marginTop: 12 }]}>リンク(タップで開く)</Text>
+      {sc.lat != null && sc.lng != null && <LinkRow icon="🗺️" label="地図で見る(Googleマップ)" desc={`${sc.city}, ${sc.state} の場所を開きます`} url={`https://www.google.com/maps/search/?api=1&query=${sc.lat},${sc.lng}`} />}
       <LinkRow icon="🏫" label="学校の公式サイト" desc="学部・学費・キャンパスなど学校全体の情報" url={sc.website} />
       <LinkRow icon="🏅" label="運動部(アスレチックス)サイト" desc={sc.athleticsUrl ? 'チームのスケジュール・コーチ・選手募集の連絡先' : '運動部の公式サイトをGoogleで探します'} url={sc.athleticsUrl ?? google(`${sc.name} athletics official site`)} />
       <LinkRow icon="💰" label={sc.scholarshipUrl ? 'スカラーシップ(奨学金)ページ' : 'スカラーシップ(奨学金)を探す'} desc={sc.scholarshipUrl ? '運動奨学金・留学生向け奨学金の案内ページ' : 'この学校のサイト内から、運動奨学金・留学生向け奨学金のページを検索します'} url={sc.scholarshipUrl ?? google(`site:${host(sc.website)} athletic scholarship international student`)} />
@@ -238,7 +245,49 @@ function Detail({ school: sc, onBack, fav, onFav }: { school: School; onBack: ()
   );
 }
 
+function Compare({ list, onBack, onRemove }: { list: School[]; onBack: () => void; onRemove: (id: string) => void }) {
+  const money = (n: number | null | undefined) => (n == null ? '—' : `$${n.toLocaleString()}`);
+  const rows: { label: string; val: (x: School) => string }[] = [
+    { label: '所在地', val: (x) => `${x.city}, ${x.state}` },
+    { label: '種別', val: (x) => `${x.level === '4year' ? '4年制' : '短大'} / ${x.control === 'public' ? '公立' : '私立'}` },
+    { label: '所属', val: (x) => `${x.division}${x.conference ? ` / ${x.conference}` : ''}` },
+    { label: '学費(州内)', val: (x) => money(x.tuitionInState) },
+    { label: '学費(州外・留学生)', val: (x) => money(x.tuitionOutOfState) },
+    { label: '平均ネットプライス', val: (x) => money(x.avgNetPrice) },
+    { label: '運動奨学金(最大)', val: (x) => (x.athleticScholarshipPct == null ? '—' : x.athleticScholarshipPct === 0 ? '0%(なし)' : `最大${x.athleticScholarshipPct}%`) },
+    { label: 'チア', val: (x) => (x.cheerNote ? 'あり(詳細は各校ページ)' : '情報なし') },
+    { label: '競技数', val: (x) => `${x.sports.length}種目` },
+  ];
+  return (
+    <ScrollView style={st.root} contentContainerStyle={{ paddingBottom: 48 }}>
+      <Pressable onPress={onBack}><Text style={st.link}>← 戻る</Text></Pressable>
+      <Text style={st.title}>学校を比較</Text>
+      <ScrollView horizontal>
+        <View>
+          <View style={st.cmpRow}>
+            <Text style={[st.cmpLabel, st.name]}> </Text>
+            {list.map((x) => (
+              <View key={x.id} style={st.cmpCell}>
+                <Text style={st.name}>{x.nameJa ?? x.name}</Text>
+                <Pressable onPress={() => onRemove(x.id)}><Text style={st.linkDesc}>外す</Text></Pressable>
+              </View>))}
+          </View>
+          {rows.map((r) => (
+            <View key={r.label} style={st.cmpRow}>
+              <Text style={[st.cmpLabel, st.meta]}>{r.label}</Text>
+              {list.map((x) => <Text key={x.id} style={[st.cmpCell, st.meta]}>{r.val(x)}</Text>)}
+            </View>))}
+        </View>
+      </ScrollView>
+      <Text style={st.warn}>※ 金額は目安です。最新は各校の公式ページで確認してください。</Text>
+    </ScrollView>
+  );
+}
+
 const st = StyleSheet.create({
+  cmpBar: { backgroundColor: '#0a5', borderRadius: 8, padding: 10, alignItems: 'center', marginBottom: 6 },
+  cmpRow: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: '#eee', paddingVertical: 8 },
+  cmpLabel: { width: 110 }, cmpCell: { width: 150, paddingRight: 8 },
   root: { flex: 1, padding: 16, paddingTop: 48, backgroundColor: '#fff' },
   title: { fontSize: 22, fontWeight: '700', marginBottom: 8 },
   input: { borderWidth: 1, borderColor: '#ccc', borderRadius: 8, padding: 10, marginBottom: 8 },
