@@ -28,6 +28,7 @@ export default function App() {
   const [picker, setPicker] = useState<'state' | 'conf' | 'sport' | null>(null);
   const [sortKey, setSortKey] = useState<'name' | 'cost' | 'pct'>('name');
   const [cheerOnly, setCheerOnly] = useState(false);
+  const [cheerKind, setCheerKind] = useState<'comp' | 'game' | 'sch' | null>(null);
   const [maxCost, setMaxCost] = useState<number | null>(null);
   const [favs, setFavs] = useState<string[]>([]);
   const [favOnly, setFavOnly] = useState(false);
@@ -59,6 +60,7 @@ export default function App() {
     const list = schools.filter((sc) =>
       (division === 'ALL' || sc.division === division) &&
       (!cheerOnly || !!sc.cheerNote) &&
+      (cheerKind == null || (cheerKind === 'comp' ? !!sc.cheerCompetitive : cheerKind === 'game' ? !!sc.cheerGameDay : !!sc.cheerScholarship)) &&
       (!favOnly || favs.includes(sc.id)) &&
       (maxCost == null || (sc.tuitionOutOfState != null && sc.tuitionOutOfState <= maxCost)) &&
       (level === 'ALL' || sc.level === level) &&
@@ -71,7 +73,7 @@ export default function App() {
     if (sortKey === 'cost') list.sort((a, b) => (a.tuitionOutOfState ?? Infinity) - (b.tuitionOutOfState ?? Infinity));
     else if (sortKey === 'pct') list.sort((a, b) => (b.athleticScholarshipPct ?? -1) - (a.athleticScholarshipPct ?? -1));
     return list;
-  }, [schools, query, division, level, scholarshipOnly, state, conference, sport, cheerOnly, maxCost, favOnly, favs, sortKey]);
+  }, [schools, query, division, level, scholarshipOnly, state, conference, sport, cheerOnly, cheerKind, maxCost, favOnly, favs, sortKey]);
 
   if (showCmp) return <Compare list={schools.filter((x) => cmp.includes(x.id))} onBack={() => setShowCmp(false)} onRemove={toggleCmp} />;
   if (selected) return <Detail school={selected} onBack={() => setSelected(null)} fav={favs.includes(selected.id)} onFav={() => toggleFav(selected.id)} />;
@@ -94,6 +96,12 @@ export default function App() {
         <Chip label="★お気に入り" on={favOnly} onPress={() => setFavOnly(!favOnly)} />
         {[15000, 25000, 40000].map((c) => (
           <Chip key={c} label={`州外学費 $${c / 1000}K以下`} on={maxCost === c} onPress={() => setMaxCost(maxCost === c ? null : c)} />))}
+      </View>
+      <View style={st.row}>
+        <Text style={[st.sub, { alignSelf: 'center', marginRight: 6 }]}>チアの種類:</Text>
+        <Chip label="競技チア" on={cheerKind === 'comp'} onPress={() => setCheerKind(cheerKind === 'comp' ? null : 'comp')} />
+        <Chip label="応援(ゲームデイ)" on={cheerKind === 'game'} onPress={() => setCheerKind(cheerKind === 'game' ? null : 'game')} />
+        <Chip label="奨学金の記載あり" on={cheerKind === 'sch'} onPress={() => setCheerKind(cheerKind === 'sch' ? null : 'sch')} />
       </View>
       <View style={st.row}>
         <Text style={[st.sub, { alignSelf: 'center', marginRight: 6 }]}>並び替え:</Text>
@@ -121,13 +129,20 @@ export default function App() {
         </View>
       </Modal>
       {cmp.length > 0 && <Pressable onPress={() => setShowCmp(true)} style={st.cmpBar}><Text style={st.chipTextOn}>比較する({cmp.length}校) →</Text></Pressable>}
+      {(() => {
+        const pts = results.filter((x) => x.lat != null && x.lng != null).slice(0, 10);
+        return pts.length >= 2 ? (
+          <Pressable onPress={() => Linking.openURL(`https://www.google.com/maps/dir/${pts.map((x) => `${x.lat},${x.lng}`).join('/')}`)}>
+            <Text style={st.link}>🗺️ 上位{pts.length}校を地図で見る(Googleマップ)</Text>
+          </Pressable>) : null;
+      })()}
       <Text style={st.count}>{results.length} 校 ・ データ更新: {updatedAt ? updatedAt.slice(0, 10) : '同梱版'}{source === 'remote' ? '(最新)' : ''}</Text>
       <FlatList data={results} keyExtractor={(x) => x.id} renderItem={({ item }) => (
         <Pressable style={st.card} onPress={() => setSelected(item)}>
           <Text style={st.name}>{favs.includes(item.id) ? '★ ' : ''}{item.nameJa ?? item.name}</Text>
           <Text style={st.sub}>{item.name}</Text>
           <Text style={st.meta}>{item.city}, {item.state} ・ {item.level === '4year' ? '4年制' : '短大'} ・ {item.division.startsWith(item.association) ? item.division : `${item.association} ${item.division}`}</Text>
-          <Text style={st.meta}>州外学費 {item.tuitionOutOfState != null ? `$${item.tuitionOutOfState.toLocaleString()}` : '—'}/年 ・ 運動奨学金 {item.athleticScholarshipPct == null ? '—' : `最大${item.athleticScholarshipPct}%`}{item.cheerNote ? ' ・ チアあり' : ''}</Text>
+          <Text style={st.meta}>州外学費 {item.tuitionOutOfState != null ? `$${item.tuitionOutOfState.toLocaleString()}` : '—'}/年 ・ 運動奨学金 {item.athleticScholarshipPct == null ? '—' : `最大${item.athleticScholarshipPct}%`}{item.cheerNote ? ` ・ チア${item.cheerCompetitive ? '(競技)' : item.cheerGameDay ? '(応援)' : ''}${item.cheerClub ? '・クラブ' : ''}` : ''}</Text>
           <Pressable onPress={() => toggleCmp(item.id)}><Text style={st.link}>{cmp.includes(item.id) ? '✓ 比較に追加済み(タップで外す)' : cmp.length >= 3 ? '比較は3校まで' : '＋ 比較に追加'}</Text></Pressable>
           <Text style={st.meta}>{item.sports.length ? item.sports.map((x) => x.nameJa).join('・') : '競技情報: 準備中'}</Text>
         </Pressable>)} />

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 import { School } from '../types';
-import { schools as bundled } from './schools';
+import { schools as bundled, bundledUpdatedAt } from './schools';
 
 const CACHE_KEY = 'schools-cache-v1';
 const DATA_URL: string | undefined = Constants.expoConfig?.extra?.dataUrl;
@@ -11,14 +11,18 @@ export interface SchoolData { schools: School[]; updatedAt: string | null; sourc
 
 /** Shows bundled/cached data immediately, then swaps in the latest remote data (no app-store release needed). */
 export function useSchools(): SchoolData {
-  const [data, setData] = useState<SchoolData>({ schools: bundled, updatedAt: null, source: 'bundled' });
+  const [data, setData] = useState<SchoolData>({ schools: bundled, updatedAt: bundledUpdatedAt, source: 'bundled' });
 
   useEffect(() => {
     let alive = true;
     (async () => {
       try {
         const cached = await AsyncStorage.getItem(CACHE_KEY);
-        if (cached && alive) setData({ ...JSON.parse(cached), source: 'cache' });
+        if (cached && alive) {
+          // offline: use the cached feed only when it is newer than the bundled data shipped with this app version
+          const c = JSON.parse(cached);
+          if (c.updatedAt && (!bundledUpdatedAt || c.updatedAt > bundledUpdatedAt)) setData({ ...c, source: 'cache' });
+        }
       } catch {}
       if (!DATA_URL) return;
       try {

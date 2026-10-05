@@ -42,6 +42,11 @@ export interface School {
   athleticScholarshipPct?: number | null;
   /** Cheer / dance / stunt / acrobatics & tumbling programs (text), from the USA Cheer directory and NCAA/NAIA lists */
   cheerNote?: string;
+  /** structured cheer flags: competitive team / game-day (sideline) / club-run / scholarship mentioned */
+  cheerCompetitive?: boolean;
+  cheerGameDay?: boolean;
+  cheerClub?: boolean;
+  cheerScholarship?: boolean;
   scholarshipNote?: string;
   website: string;
   /** Athletics department site, when known (NCAA schools) */

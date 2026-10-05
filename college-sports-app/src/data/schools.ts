@@ -51,3 +51,4 @@ import generated from './schools.generated.json';
 // The feed is { updatedAt, schools: [...] }; an older bare-array bundle is also accepted.
 const bundledList: School[] = Array.isArray(generated) ? (generated as unknown as School[]) : ((generated as unknown as { schools?: School[] }).schools ?? []);
 export const schools: School[] = bundledList.length ? bundledList : sample;
+export const bundledUpdatedAt: string | null = Array.isArray(generated) ? null : ((generated as unknown as { updatedAt?: string }).updatedAt ?? null);
