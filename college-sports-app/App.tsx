@@ -1,5 +1,6 @@
-import { useMemo, useState } from 'react';
-import { FlatList, Linking, Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useEffect, useMemo, useState } from 'react';
+import { FlatList, Linking, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { StatusBar } from 'expo-status-bar';
 import { useSchools } from './src/data/useSchools';
 import { Division, School } from './src/types';
@@ -25,6 +26,17 @@ export default function App() {
   const [conference, setConference] = useState<string | null>(null);
   const [sport, setSport] = useState<string | null>(null);
   const [picker, setPicker] = useState<'state' | 'conf' | 'sport' | null>(null);
+  const [sortKey, setSortKey] = useState<'name' | 'cost' | 'pct'>('name');
+  const [cheerOnly, setCheerOnly] = useState(false);
+  const [maxCost, setMaxCost] = useState<number | null>(null);
+  const [favs, setFavs] = useState<string[]>([]);
+  const [favOnly, setFavOnly] = useState(false);
+  useEffect(() => { AsyncStorage.getItem('favs').then((v) => { if (v) setFavs(JSON.parse(v)); }).catch(() => {}); }, []);
+  const toggleFav = (id: string) => setFavs((cur) => {
+    const next = cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id];
+    AsyncStorage.setItem('favs', JSON.stringify(next)).catch(() => {});
+    return next;
+  });
 
   const states = useMemo(() => [...new Set(schools.map((x) => x.state))].sort(), [schools]);
   // conferences available for the currently chosen division (conference data exists for NCAA schools only)
@@ -41,8 +53,11 @@ export default function App() {
 
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return schools.filter((sc) =>
+    const list = schools.filter((sc) =>
       (division === 'ALL' || sc.division === division) &&
+      (!cheerOnly || !!sc.cheerNote) &&
+      (!favOnly || favs.includes(sc.id)) &&
+      (maxCost == null || (sc.tuitionOutOfState != null && sc.tuitionOutOfState <= maxCost)) &&
       (level === 'ALL' || sc.level === level) &&
       (!state || sc.state === state) &&
       (!conference || sc.conference === conference) &&
@@ -50,9 +65,12 @@ export default function App() {
       (!scholarshipOnly || sc.athleticScholarship) &&
       (!q || [sc.name, sc.nameJa ?? '', sc.state, sc.city, ...sc.sports.flatMap((x) => [x.name, x.nameJa])]
         .some((t) => t.toLowerCase().includes(q))));
-  }, [schools, query, division, level, scholarshipOnly, state, conference, sport]);
+    if (sortKey === 'cost') list.sort((a, b) => (a.tuitionOutOfState ?? Infinity) - (b.tuitionOutOfState ?? Infinity));
+    else if (sortKey === 'pct') list.sort((a, b) => (b.athleticScholarshipPct ?? -1) - (a.athleticScholarshipPct ?? -1));
+    return list;
+  }, [schools, query, division, level, scholarshipOnly, state, conference, sport, cheerOnly, maxCost, favOnly, favs, sortKey]);
 
-  if (selected) return <Detail school={selected} onBack={() => setSelected(null)} />;
+  if (selected) return <Detail school={selected} onBack={() => setSelected(null)} fav={favs.includes(selected.id)} onFav={() => toggleFav(selected.id)} />;
 
   return (
     <View style={st.root}>
@@ -66,6 +84,18 @@ export default function App() {
         <Chip label="4年制" on={level === '4year'} onPress={() => setLevel(level === '4year' ? 'ALL' : '4year')} />
         <Chip label="短大" on={level === '2year'} onPress={() => setLevel(level === '2year' ? 'ALL' : '2year')} />
         <Chip label="アスリート奨学金あり" on={scholarshipOnly} onPress={() => setScholarshipOnly(!scholarshipOnly)} />
+      </View>
+      <View style={st.row}>
+        <Chip label="チアあり" on={cheerOnly} onPress={() => setCheerOnly(!cheerOnly)} />
+        <Chip label="★お気に入り" on={favOnly} onPress={() => setFavOnly(!favOnly)} />
+        {[15000, 25000, 40000].map((c) => (
+          <Chip key={c} label={`州外学費 $${c / 1000}K以下`} on={maxCost === c} onPress={() => setMaxCost(maxCost === c ? null : c)} />))}
+      </View>
+      <View style={st.row}>
+        <Text style={[st.sub, { alignSelf: 'center', marginRight: 6 }]}>並び替え:</Text>
+        <Chip label="名前順" on={sortKey === 'name'} onPress={() => setSortKey('name')} />
+        <Chip label="学費が安い順" on={sortKey === 'cost'} onPress={() => setSortKey('cost')} />
+        <Chip label="奨学金%が高い順" on={sortKey === 'pct'} onPress={() => setSortKey('pct')} />
       </View>
       <View style={st.row}>
         <Chip label={state ? `州: ${stateJa[state] ?? state}` : '州で絞る ▾'} on={!!state} onPress={() => setPicker('state')} />
@@ -89,9 +119,10 @@ export default function App() {
       <Text style={st.count}>{results.length} 校 ・ データ更新: {updatedAt ? updatedAt.slice(0, 10) : '同梱版'}{source === 'remote' ? '(最新)' : ''}</Text>
       <FlatList data={results} keyExtractor={(x) => x.id} renderItem={({ item }) => (
         <Pressable style={st.card} onPress={() => setSelected(item)}>
-          <Text style={st.name}>{item.nameJa ?? item.name}</Text>
+          <Text style={st.name}>{favs.includes(item.id) ? '★ ' : ''}{item.nameJa ?? item.name}</Text>
           <Text style={st.sub}>{item.name}</Text>
-          <Text style={st.meta}>{item.city}, {item.state} ・ {item.level === '4year' ? '4年制' : '短大'} ・ {item.association} {item.division}</Text>
+          <Text style={st.meta}>{item.city}, {item.state} ・ {item.level === '4year' ? '4年制' : '短大'} ・ {item.division.startsWith(item.association) ? item.division : `${item.association} ${item.division}`}</Text>
+          <Text style={st.meta}>州外学費 {item.tuitionOutOfState != null ? `$${item.tuitionOutOfState.toLocaleString()}` : '—'}/年 ・ 運動奨学金 {item.athleticScholarshipPct == null ? '—' : `最大${item.athleticScholarshipPct}%`}{item.cheerNote ? ' ・ チアあり' : ''}</Text>
           <Text style={st.meta}>{item.sports.length ? item.sports.map((x) => x.nameJa).join('・') : '競技情報: 準備中'}</Text>
         </Pressable>)} />
     </View>
@@ -135,11 +166,14 @@ function Chip({ label, on, onPress }: { label: string; on: boolean; onPress: () 
   );
 }
 
-function Detail({ school: sc, onBack }: { school: School; onBack: () => void }) {
+function Detail({ school: sc, onBack, fav, onFav }: { school: School; onBack: () => void; fav: boolean; onFav: () => void }) {
   const money = (n: number | null) => (n == null ? '—' : `$${n.toLocaleString()}`);
   return (
-    <View style={st.root}>
-      <Pressable onPress={onBack}><Text style={st.link}>← 戻る</Text></Pressable>
+    <ScrollView style={st.root} contentContainerStyle={{ paddingBottom: 48 }}>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+        <Pressable onPress={onBack}><Text style={st.link}>← 戻る</Text></Pressable>
+        <Pressable onPress={onFav}><Text style={st.link}>{fav ? '★ お気に入り済み' : '☆ お気に入りに追加'}</Text></Pressable>
+      </View>
       <Text style={st.title}>{sc.nameJa ?? sc.name}</Text>
       <Text style={st.sub}>{sc.name}</Text>
       <View style={st.summary}>
@@ -200,7 +234,7 @@ function Detail({ school: sc, onBack }: { school: School; onBack: () => void }) 
       <LinkRow icon="💰" label={sc.scholarshipUrl ? 'スカラーシップ(奨学金)ページ' : 'スカラーシップ(奨学金)を探す'} desc={sc.scholarshipUrl ? '運動奨学金・留学生向け奨学金の案内ページ' : 'この学校のサイト内から、運動奨学金・留学生向け奨学金のページを検索します'} url={sc.scholarshipUrl ?? google(`site:${host(sc.website)} athletic scholarship international student`)} />
       <LinkRow icon="✈️" label="留学生の出願ページを探す" desc="出願方法・必要書類・英語スコアなど留学生向けの案内を検索します" url={google(`site:${host(sc.website)} international admissions`)} />
       {!sc.verified && <Text style={st.warn}>※ データ出典: 米国教育省 EADA 2024-25 / College Scorecard。奨学金・競技は年度で変わるため、出願前に必ず公式サイトで確認してください。</Text>}
-    </View>
+    </ScrollView>
   );
 }
 

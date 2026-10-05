@@ -48,4 +48,6 @@ const sample: School[] = [
 
 import generated from './schools.generated.json';
 // Full list (NCAA via `npm run fetch:ncaa && npm run build:data`); falls back to the sample if empty.
-export const schools: School[] = (generated as unknown as School[]).length ? (generated as unknown as School[]) : sample;
+// The feed is { updatedAt, schools: [...] }; an older bare-array bundle is also accepted.
+const bundledList: School[] = Array.isArray(generated) ? (generated as unknown as School[]) : ((generated as unknown as { schools?: School[] }).schools ?? []);
+export const schools: School[] = bundledList.length ? bundledList : sample;
