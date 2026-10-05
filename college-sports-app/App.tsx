@@ -83,7 +83,7 @@ export default function App() {
     <View style={st.root}>
       <StatusBar style="auto" />
       <Text style={st.title}>アメリカ大学スポーツ検索</Text>
-      <TextInput style={st.input} placeholder="学校名・州・スポーツ・区分で検索 (例: 野球, CA, NCAA D2, NWAC)" placeholderTextColor="#888" value={query} onChangeText={setQuery} />
+      <TextInput style={st.input} placeholder="学校名・州・スポーツ・区分で検索 (例: 野球, CA, NCAA D1, NWAC)" placeholderTextColor="#888" value={query} onChangeText={setQuery} />
       <View style={st.row}>
         {DIVISIONS.map((item) => (
           <Chip key={item.key} label={item.label} on={item.key === 'ALL' ? divisions.length === 0 : divisions.includes(item.key as Division)}
