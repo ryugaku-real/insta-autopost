@@ -18,22 +18,21 @@ const DIVISIONS: { key: Division | 'ALL'; label: string }[] = [
 export default function App() {
   const { schools, updatedAt, source } = useSchools();
   const [query, setQuery] = useState('');
-  const [division, setDivision] = useState<Division | 'ALL'>('ALL');
+  const [divisions, setDivisions] = useState<Division[]>([]);
   const [level, setLevel] = useState<'ALL' | '4year' | '2year'>('ALL');
   const [scholarshipOnly, setScholarshipOnly] = useState(false);
   const [selected, setSelected] = useState<School | null>(null);
-  const [state, setState] = useState<string | null>(null);
-  const [conference, setConference] = useState<string | null>(null);
-  const [sport, setSport] = useState<string | null>(null);
+  const [stateSel, setStateSel] = useState<string[]>([]);
+  const [confSel, setConfSel] = useState<string[]>([]);
+  const [sportSel, setSportSel] = useState<string[]>([]);
   const [picker, setPicker] = useState<'state' | 'conf' | 'sport' | null>(null);
   const [sortKey, setSortKey] = useState<'name' | 'cost' | 'pct'>('name');
-  const [cheerOnly, setCheerOnly] = useState(false);
-  const [cheerKind, setCheerKind] = useState<'comp' | 'game' | 'sch' | null>(null);
   const [maxCost, setMaxCost] = useState<number | null>(null);
   const [favs, setFavs] = useState<string[]>([]);
   const [favOnly, setFavOnly] = useState(false);
   const [cmp, setCmp] = useState<string[]>([]);
   const [showCmp, setShowCmp] = useState(false);
+  const toggleIn = <T,>(set: (f: (c: T[]) => T[]) => void, v: T) => set((c) => (c.includes(v) ? c.filter((x) => x !== v) : [...c, v]));
   const toggleCmp = (id: string) => setCmp((c) => c.includes(id) ? c.filter((x) => x !== id) : c.length >= 3 ? c : [...c, id]);
   useEffect(() => { AsyncStorage.getItem('favs').then((v) => { if (v) setFavs(JSON.parse(v)); }).catch(() => {}); }, []);
   const toggleFav = (id: string) => setFavs((cur) => {
@@ -45,8 +44,8 @@ export default function App() {
   const states = useMemo(() => [...new Set(schools.map((x) => x.state))].sort(), [schools]);
   // conferences available for the currently chosen division (conference data exists for NCAA schools only)
   const conferences = useMemo(
-    () => [...new Set(schools.filter((x) => division === 'ALL' || x.division === division).map((x) => x.conference).filter((c): c is string => !!c))].sort(),
-    [division, schools]);
+    () => [...new Set(schools.filter((x) => divisions.length === 0 || divisions.includes(x.division)).map((x) => x.conference).filter((c): c is string => !!c))].sort(),
+    [divisions, schools]);
 
   // every sport that appears in the data (incl. cheer/dance/stunt), most common first
   const sportList = useMemo(() => {
@@ -57,23 +56,23 @@ export default function App() {
 
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();
+    const nq = q.replace(/[\s_-]+/g, '');
     const list = schools.filter((sc) =>
-      (division === 'ALL' || sc.division === division) &&
-      (!cheerOnly || !!sc.cheerNote) &&
-      (cheerKind == null || (cheerKind === 'comp' ? !!sc.cheerCompetitive : cheerKind === 'game' ? !!sc.cheerGameDay : !!sc.cheerScholarship)) &&
+      (divisions.length === 0 || divisions.includes(sc.division)) &&
       (!favOnly || favs.includes(sc.id)) &&
       (maxCost == null || (sc.tuitionOutOfState != null && sc.tuitionOutOfState <= maxCost)) &&
       (level === 'ALL' || sc.level === level) &&
-      (!state || sc.state === state) &&
-      (!conference || sc.conference === conference) &&
-      (!sport || sc.sports.some((x) => x.name === sport)) &&
+      (stateSel.length === 0 || stateSel.includes(sc.state)) &&
+      (confSel.length === 0 || (!!sc.conference && confSel.includes(sc.conference))) &&
+      (sportSel.length === 0 || sportSel.every((n) => sc.sports.some((x) => x.name === n))) &&
       (!scholarshipOnly || sc.athleticScholarship) &&
       (!q || [sc.name, sc.nameJa ?? '', sc.state, sc.city, ...sc.sports.flatMap((x) => [x.name, x.nameJa])]
-        .some((t) => t.toLowerCase().includes(q))));
+        .some((t) => t.toLowerCase().includes(q)) ||
+        [`${sc.association}${sc.division}`, sc.division, sc.association].some((t) => t.toLowerCase().replace(/[\s_-]+/g, '').includes(nq))));
     if (sortKey === 'cost') list.sort((a, b) => (a.tuitionOutOfState ?? Infinity) - (b.tuitionOutOfState ?? Infinity));
     else if (sortKey === 'pct') list.sort((a, b) => (b.athleticScholarshipPct ?? -1) - (a.athleticScholarshipPct ?? -1));
     return list;
-  }, [schools, query, division, level, scholarshipOnly, state, conference, sport, cheerOnly, cheerKind, maxCost, favOnly, favs, sortKey]);
+  }, [schools, query, divisions, level, scholarshipOnly, stateSel, confSel, sportSel, maxCost, favOnly, favs, sortKey]);
 
   if (showCmp) return <Compare list={schools.filter((x) => cmp.includes(x.id))} onBack={() => setShowCmp(false)} onRemove={toggleCmp} />;
   if (selected) return <Detail school={selected} onBack={() => setSelected(null)} fav={favs.includes(selected.id)} onFav={() => toggleFav(selected.id)} />;
@@ -82,50 +81,52 @@ export default function App() {
     <View style={st.root}>
       <StatusBar style="auto" />
       <Text style={st.title}>アメリカ大学スポーツ検索</Text>
-      <TextInput style={st.input} placeholder="学校名・州・スポーツで検索 (例: 野球, CA)" value={query} onChangeText={setQuery} />
-      <FlatList horizontal showsHorizontalScrollIndicator={false} data={DIVISIONS} keyExtractor={(d) => d.key}
-        style={st.chips} renderItem={({ item }) => (
-          <Chip label={item.label} on={division === item.key} onPress={() => { setDivision(item.key); setConference(null); }} />)} />
+      <TextInput style={st.input} placeholder="学校名・州・スポーツ・区分で検索 (例: 野球, CA, NCAA D2, NWAC)" placeholderTextColor="#888" value={query} onChangeText={setQuery} />
+      <View style={st.row}>
+        {DIVISIONS.map((item) => (
+          <Chip key={item.key} label={item.label} on={item.key === 'ALL' ? divisions.length === 0 : divisions.includes(item.key as Division)}
+            onPress={() => { if (item.key === 'ALL') setDivisions([]); else toggleIn<Division>(setDivisions, item.key as Division); setConfSel([]); }} />))}
+      </View>
       <View style={st.row}>
         <Chip label="4年制" on={level === '4year'} onPress={() => setLevel(level === '4year' ? 'ALL' : '4year')} />
         <Chip label="短大" on={level === '2year'} onPress={() => setLevel(level === '2year' ? 'ALL' : '2year')} />
         <Chip label="アスリート奨学金あり" on={scholarshipOnly} onPress={() => setScholarshipOnly(!scholarshipOnly)} />
       </View>
       <View style={st.row}>
-        <Chip label="チアあり" on={cheerOnly} onPress={() => setCheerOnly(!cheerOnly)} />
         <Chip label="★お気に入り" on={favOnly} onPress={() => setFavOnly(!favOnly)} />
         {[15000, 25000, 40000].map((c) => (
           <Chip key={c} label={`州外学費 $${c / 1000}K以下`} on={maxCost === c} onPress={() => setMaxCost(maxCost === c ? null : c)} />))}
       </View>
       <View style={st.row}>
-        <Text style={[st.sub, { alignSelf: 'center', marginRight: 6 }]}>チアの種類:</Text>
-        <Chip label="競技チア" on={cheerKind === 'comp'} onPress={() => setCheerKind(cheerKind === 'comp' ? null : 'comp')} />
-        <Chip label="応援(ゲームデイ)" on={cheerKind === 'game'} onPress={() => setCheerKind(cheerKind === 'game' ? null : 'game')} />
-        <Chip label="奨学金の記載あり" on={cheerKind === 'sch'} onPress={() => setCheerKind(cheerKind === 'sch' ? null : 'sch')} />
-      </View>
-      <View style={st.row}>
         <Text style={[st.sub, { alignSelf: 'center', marginRight: 6 }]}>並び替え:</Text>
         <Chip label="名前順" on={sortKey === 'name'} onPress={() => setSortKey('name')} />
         <Chip label="学費が安い順" on={sortKey === 'cost'} onPress={() => setSortKey('cost')} />
-        <Chip label="奨学金%が高い順" on={sortKey === 'pct'} onPress={() => setSortKey('pct')} />
+        <Chip label="アスリート奨学金%が高い順" on={sortKey === 'pct'} onPress={() => setSortKey('pct')} />
       </View>
       <View style={st.row}>
-        <Chip label={state ? `州: ${stateJa[state] ?? state}` : '州で絞る ▾'} on={!!state} onPress={() => setPicker('state')} />
-        <Chip label={conference ? `リーグ: ${conference}` : 'リーグ(カンファレンス)で絞る ▾'} on={!!conference} onPress={() => setPicker('conf')} />
-        <Chip label={sport ? `競技: ${sportList.find((x) => x.name === sport)?.ja ?? sport}` : '競技で絞る(チア含む全競技) ▾'} on={!!sport} onPress={() => setPicker('sport')} />
+        <Chip label={stateSel.length ? `州: ${stateSel.map((x) => stateJa[x] ?? x).join('・')}` : '州で絞る ▾'} on={stateSel.length > 0} onPress={() => setPicker('state')} />
+        <Chip label={confSel.length ? `リーグ: ${confSel.length}件` : 'リーグ(カンファレンス)で絞る ▾'} on={confSel.length > 0} onPress={() => setPicker('conf')} />
+        <Chip label={sportSel.length ? `競技: ${sportSel.map((n) => sportList.find((x) => x.name === n)?.ja ?? n).join('・')}` : '競技で絞る(チア含む) ▾'} on={sportSel.length > 0} onPress={() => setPicker('sport')} />
       </View>
       <Modal visible={picker !== null} animationType="slide" onRequestClose={() => setPicker(null)}>
         <View style={st.root}>
-          <Text style={st.title}>{picker === 'state' ? '州を選ぶ' : picker === 'sport' ? '競技を選ぶ' : 'リーグを選ぶ'}</Text>
-          {picker === 'conf' && <Text style={st.sub}>※ リーグ名はNCAA加盟校のみ。{division === 'ALL' ? '' : `${division}のリーグを表示中。`}</Text>}
+          <Text style={st.title}>{picker === 'state' ? '州を選ぶ(複数可)' : picker === 'sport' ? '競技を選ぶ(複数可・すべてに当てはまる学校)' : 'リーグを選ぶ(複数可)'}</Text>
+          {picker === 'conf' && <Text style={st.sub}>※ リーグ名はNCAA加盟校のみ。{divisions.length === 0 ? '' : `${divisions.join('・')}のリーグを表示中。`}</Text>}
           <FlatList
-            data={[null, ...(picker === 'state' ? states : picker === 'sport' ? sportList.map((x) => x.name) : conferences)]}
-            keyExtractor={(x) => x ?? 'all'}
-            renderItem={({ item }) => (
-              <Pressable style={st.pickRow} onPress={() => { picker === 'state' ? setState(item) : picker === 'sport' ? setSport(item) : setConference(item); setPicker(null); }}>
-                <Text style={st.name}>{item === null ? 'すべて' : picker === 'state' ? `${stateJa[item] ?? item} (${item})` : picker === 'sport' ? `${sportList.find((x) => x.name === item)?.ja ?? item} (${item})` : item}</Text>
-              </Pressable>)} />
-          <Pressable onPress={() => setPicker(null)}><Text style={st.link}>閉じる</Text></Pressable>
+            data={picker === 'state' ? states : picker === 'sport' ? sportList.map((x) => x.name) : conferences}
+            keyExtractor={(x) => x}
+            renderItem={({ item }) => {
+              const sel = picker === 'state' ? stateSel : picker === 'sport' ? sportSel : confSel;
+              const on = sel.includes(item);
+              return (
+                <Pressable style={st.pickRow} onPress={() => toggleIn<string>(picker === 'state' ? setStateSel : picker === 'sport' ? setSportSel : setConfSel, item)}>
+                  <Text style={[st.name, on && { color: '#0a5' }]}>{on ? '✓ ' : ''}{picker === 'state' ? `${stateJa[item] ?? item} (${item})` : picker === 'sport' ? `${sportList.find((x) => x.name === item)?.ja ?? item} (${item})` : item}</Text>
+                </Pressable>);
+            }} />
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingTop: 8 }}>
+            <Pressable onPress={() => (picker === 'state' ? setStateSel([]) : picker === 'sport' ? setSportSel([]) : setConfSel([]))}><Text style={st.link}>選択をクリア</Text></Pressable>
+            <Pressable onPress={() => setPicker(null)}><Text style={st.link}>完了</Text></Pressable>
+          </View>
         </View>
       </Modal>
       {cmp.length > 0 && <Pressable onPress={() => setShowCmp(true)} style={st.cmpBar}><Text style={st.chipTextOn}>比較する({cmp.length}校) →</Text></Pressable>}
@@ -142,7 +143,7 @@ export default function App() {
           <Text style={st.name}>{favs.includes(item.id) ? '★ ' : ''}{item.nameJa ?? item.name}</Text>
           <Text style={st.sub}>{item.name}</Text>
           <Text style={st.meta}>{item.city}, {item.state} ・ {item.level === '4year' ? '4年制' : '短大'} ・ {item.division.startsWith(item.association) ? item.division : `${item.association} ${item.division}`}</Text>
-          <Text style={st.meta}>州外学費 {item.tuitionOutOfState != null ? `$${item.tuitionOutOfState.toLocaleString()}` : '—'}/年 ・ 運動奨学金 {item.athleticScholarshipPct == null ? '—' : `最大${item.athleticScholarshipPct}%`}{item.cheerNote ? ` ・ チア${item.cheerCompetitive ? '(競技)' : item.cheerGameDay ? '(応援)' : ''}${item.cheerClub ? '・クラブ' : ''}` : ''}</Text>
+          <Text style={st.meta}>州外学費 {item.tuitionOutOfState != null ? `$${item.tuitionOutOfState.toLocaleString()}` : '—'}/年 ・ アスリート奨学金 {item.athleticScholarshipPct == null ? '—' : `最大${item.athleticScholarshipPct}%`}</Text>
           <Pressable onPress={() => toggleCmp(item.id)}><Text style={st.link}>{cmp.includes(item.id) ? '✓ 比較に追加済み(タップで外す)' : cmp.length >= 3 ? '比較は3校まで' : '＋ 比較に追加'}</Text></Pressable>
           <Text style={st.meta}>{item.sports.length ? item.sports.map((x) => x.nameJa).join('・') : '競技情報: 準備中'}</Text>
         </Pressable>)} />
@@ -269,8 +270,8 @@ function Compare({ list, onBack, onRemove }: { list: School[]; onBack: () => voi
     { label: '学費(州内)', val: (x) => money(x.tuitionInState) },
     { label: '学費(州外・留学生)', val: (x) => money(x.tuitionOutOfState) },
     { label: '平均ネットプライス', val: (x) => money(x.avgNetPrice) },
-    { label: '運動奨学金(最大)', val: (x) => (x.athleticScholarshipPct == null ? '—' : x.athleticScholarshipPct === 0 ? '0%(なし)' : `最大${x.athleticScholarshipPct}%`) },
-    { label: 'チア', val: (x) => (x.cheerNote ? 'あり(詳細は各校ページ)' : '情報なし') },
+    { label: 'アスリート奨学金(最大)', val: (x) => (x.athleticScholarshipPct == null ? '—' : x.athleticScholarshipPct === 0 ? '0%(なし)' : `最大${x.athleticScholarshipPct}%`) },
+    { label: 'チア', val: (x) => (x.sports.some((sp) => sp.name === 'Cheerleading') ? 'あり' : '情報なし') },
     { label: '競技数', val: (x) => `${x.sports.length}種目` },
   ];
   return (
@@ -305,7 +306,7 @@ const st = StyleSheet.create({
   cmpLabel: { width: 110 }, cmpCell: { width: 150, paddingRight: 8 },
   root: { flex: 1, padding: 16, paddingTop: 48, backgroundColor: '#fff' },
   title: { fontSize: 22, fontWeight: '700', marginBottom: 8 },
-  input: { borderWidth: 1, borderColor: '#ccc', borderRadius: 8, padding: 10, marginBottom: 8 },
+  input: { borderWidth: 1, borderColor: '#ccc', borderRadius: 8, padding: 10, marginBottom: 8, color: '#111', backgroundColor: '#fff' },
   chips: { flexGrow: 0, marginBottom: 6 },
   row: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: 6 },
   chip: { borderWidth: 1, borderColor: '#bbb', borderRadius: 16, paddingHorizontal: 12, paddingVertical: 6, marginRight: 6, marginBottom: 6 },
