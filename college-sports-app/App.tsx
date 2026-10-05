@@ -161,7 +161,7 @@ function Detail({ school: sc, onBack }: { school: School; onBack: () => void }) 
         </View>)}
       <View style={st.summary}>
         <Text style={st.name}>チア・ダンス・スタント</Text>
-        <Text style={st.meta}>{sc.cheerNote ?? '—'}</Text>
+        <Text style={st.meta}>{sc.cheerNote ?? 'チーム情報なし(未確認)'}</Text>
         {!!sc.cheerNote && <Text style={st.linkDesc}>{CHEER_AID_NOTE}</Text>}
       </View>
       <Text style={st.meta}>平均ネットプライス(奨学金差引後・米国学生): {money(sc.avgNetPrice ?? null)}/年</Text>
