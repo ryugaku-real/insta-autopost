@@ -33,6 +33,8 @@ export default function App() {
   const [cmp, setCmp] = useState<string[]>([]);
   const [showCmp, setShowCmp] = useState(false);
   const toggleIn = <T,>(set: (f: (c: T[]) => T[]) => void, v: T) => set((c) => (c.includes(v) ? c.filter((x) => x !== v) : [...c, v]));
+  // cheer details are shown only while a cheer-type sport is selected in the sport filter
+  const cheerSelected = sportSel.some((n) => ['Cheerleading', 'Dance', 'STUNT', 'Acrobatics & Tumbling'].includes(n));
   const toggleCmp = (id: string) => setCmp((c) => c.includes(id) ? c.filter((x) => x !== id) : c.length >= 3 ? c : [...c, id]);
   useEffect(() => { AsyncStorage.getItem('favs').then((v) => { if (v) setFavs(JSON.parse(v)); }).catch(() => {}); }, []);
   const toggleFav = (id: string) => setFavs((cur) => {
@@ -74,8 +76,8 @@ export default function App() {
     return list;
   }, [schools, query, divisions, level, scholarshipOnly, stateSel, confSel, sportSel, maxCost, favOnly, favs, sortKey]);
 
-  if (showCmp) return <Compare list={schools.filter((x) => cmp.includes(x.id))} onBack={() => setShowCmp(false)} onRemove={toggleCmp} />;
-  if (selected) return <Detail school={selected} onBack={() => setSelected(null)} fav={favs.includes(selected.id)} onFav={() => toggleFav(selected.id)} />;
+  if (showCmp) return <Compare showCheer={cheerSelected} list={schools.filter((x) => cmp.includes(x.id))} onBack={() => setShowCmp(false)} onRemove={toggleCmp} />;
+  if (selected) return <Detail school={selected} showCheer={cheerSelected} onBack={() => setSelected(null)} fav={favs.includes(selected.id)} onFav={() => toggleFav(selected.id)} />;
 
   return (
     <View style={st.root}>
@@ -188,7 +190,7 @@ function Chip({ label, on, onPress }: { label: string; on: boolean; onPress: () 
   );
 }
 
-function Detail({ school: sc, onBack, fav, onFav }: { school: School; onBack: () => void; fav: boolean; onFav: () => void }) {
+function Detail({ school: sc, onBack, fav, onFav, showCheer }: { school: School; onBack: () => void; fav: boolean; onFav: () => void; showCheer: boolean }) {
   const money = (n: number | null) => (n == null ? '—' : `$${n.toLocaleString()}`);
   return (
     <ScrollView style={st.root} contentContainerStyle={{ paddingBottom: 48 }}>
@@ -215,11 +217,12 @@ function Detail({ school: sc, onBack, fav, onFav }: { school: School; onBack: ()
           {sc.athleticScholarshipPct != null && sc.athleticScholarshipPct > 0 && (
             <Text style={st.linkDesc}>{sc.division === 'NJCAA-D2' ? '授業料・教材のみが対象のため、総費用に対する目安の割合です。' : sc.athleticScholarshipPct === 100 ? '全額まで可能ですが、実際はチームの上限内で選手ごとに異なり、部分奨学金が多いです。' : ''}</Text>)}
         </View>)}
+      {showCheer && (
       <View style={st.summary}>
         <Text style={st.name}>チア・ダンス・スタント</Text>
         <Text style={st.meta}>{sc.cheerNote ?? 'チーム情報なし(未確認)'}</Text>
         {!!sc.cheerNote && <Text style={st.linkDesc}>{CHEER_AID_NOTE}</Text>}
-      </View>
+      </View>)}
       <Text style={st.meta}>平均ネットプライス(奨学金差引後・米国学生): {money(sc.avgNetPrice ?? null)}/年</Text>
       {sc.tuitionLines && sc.tuitionLines.length > 0 && (
         <View style={st.summary}>
@@ -261,7 +264,7 @@ function Detail({ school: sc, onBack, fav, onFav }: { school: School; onBack: ()
   );
 }
 
-function Compare({ list, onBack, onRemove }: { list: School[]; onBack: () => void; onRemove: (id: string) => void }) {
+function Compare({ list, onBack, onRemove, showCheer }: { list: School[]; onBack: () => void; onRemove: (id: string) => void; showCheer: boolean }) {
   const money = (n: number | null | undefined) => (n == null ? '—' : `$${n.toLocaleString()}`);
   const rows: { label: string; val: (x: School) => string }[] = [
     { label: '所在地', val: (x) => `${x.city}, ${x.state}` },
@@ -271,7 +274,7 @@ function Compare({ list, onBack, onRemove }: { list: School[]; onBack: () => voi
     { label: '学費(州外・留学生)', val: (x) => money(x.tuitionOutOfState) },
     { label: '平均ネットプライス', val: (x) => money(x.avgNetPrice) },
     { label: 'アスリート奨学金(最大)', val: (x) => (x.athleticScholarshipPct == null ? '—' : x.athleticScholarshipPct === 0 ? '0%(なし)' : `最大${x.athleticScholarshipPct}%`) },
-    { label: 'チア', val: (x) => (x.sports.some((sp) => sp.name === 'Cheerleading') ? 'あり' : '情報なし') },
+    ...(showCheer ? [{ label: 'チア', val: (x: School) => (x.sports.some((sp: { name: string }) => sp.name === 'Cheerleading') ? 'あり' : '情報なし') }] : []),
     { label: '競技数', val: (x) => `${x.sports.length}種目` },
   ];
   return (
