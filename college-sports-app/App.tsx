@@ -6,13 +6,15 @@ import { useSchools } from './src/data/useSchools';
 import { Division, School } from './src/types';
 import { aidRules } from './src/data/aidRules';
 import { stateJa } from './src/data/states';
+import { detectLang, getLang, Lang, setLang, stateEn, tr } from './src/i18n';
+import { engText } from './src/engText';
 import { CHEER_AID_NOTE, limitHeader, sportLimits } from './src/data/athleticLimits';
 
 const DIVISIONS: { key: Division | 'ALL'; label: string }[] = [
-  { key: 'ALL', label: 'すべて' }, { key: 'D1', label: 'NCAA D1' }, { key: 'D2', label: 'NCAA D2' },
+  { key: 'ALL', label: 'ALL' }, { key: 'D1', label: 'NCAA D1' }, { key: 'D2', label: 'NCAA D2' },
   { key: 'D3', label: 'NCAA D3' }, { key: 'NAIA', label: 'NAIA' }, { key: 'NJCAA-D1', label: 'NJCAA D1' },
   { key: 'NJCAA-D2', label: 'NJCAA D2' }, { key: 'NJCAA-D3', label: 'NJCAA D3' },
-  { key: 'CCCAA', label: 'CCCAA(CA)' }, { key: 'NWAC', label: 'NWAC(北西部)' },
+  { key: 'CCCAA', label: 'CCCAA(CA)' }, { key: 'NWAC', label: 'NWAC' },
 ];
 
 const FREE_FAVS = 3;
@@ -35,6 +37,12 @@ export default function App() {
   const [favs, setFavs] = useState<string[]>([]);
   const [favOnly, setFavOnly] = useState(false);
   const [premium, setPremium] = useState(false);
+  const [lang, setLangState] = useState<Lang>(detectLang());
+  setLang(lang);
+  useEffect(() => { AsyncStorage.getItem('lang').then((v) => { if (v === 'ja' || v === 'en') setLangState(v); }).catch(() => {}); }, []);
+  const switchLang = () => { const n: Lang = lang === 'ja' ? 'en' : 'ja'; setLang(n); setLangState(n); AsyncStorage.setItem('lang', n).catch(() => {}); };
+  const stName = (c: string) => (lang === 'en' ? stateEn[c] : stateJa[c]) ?? c;
+  const spName = (name: string, ja?: string) => (lang === 'en' ? name : ja ?? name);
   const [showPlan, setShowPlan] = useState(false);
   const [lockHint, setLockHint] = useState<string | null>(null);
   const [cmp, setCmp] = useState<string[]>([]);
@@ -44,7 +52,7 @@ export default function App() {
   const cheerSelected = sportSel.some((n) => ['Cheerleading', 'Dance', 'STUNT', 'Acrobatics & Tumbling'].includes(n));
   const cmpLimit = premium ? PAID_CMP : FREE_CMP;
   const toggleCmp = (id: string) => {
-    if (!cmp.includes(id) && cmp.length >= cmpLimit) { setLockHint(premium ? `比較は${PAID_CMP}校までです。` : `比較は${FREE_CMP}校まで。${FREE_CMP + 1}校以上は有料プランです。`); return; }
+    if (!cmp.includes(id) && cmp.length >= cmpLimit) { setLockHint(premium ? tr(`比較は${PAID_CMP}校までです。`, `You can compare up to ${PAID_CMP} schools.`) : tr(`比較は${FREE_CMP}校まで。${FREE_CMP + 1}校以上は有料プランです。`, `Free plan: compare up to ${FREE_CMP} schools. ${FREE_CMP + 1}+ needs the paid plan.`)); return; }
     setCmp((c) => (c.includes(id) ? c.filter((x) => x !== id) : [...c, id]));
   };
   // free plan: one value per filter (state / league / sport); premium: several at once
@@ -52,13 +60,13 @@ export default function App() {
     if (list.includes(item)) { setter(list.filter((x) => x !== item)); return; }
     if (premium || list.length === 0) { setter([...list, item]); return; }
     setter([item]);
-    setLockHint('無料プランでは各項目1つまで。2つ以上を同時に選ぶには有料プランです。');
+    setLockHint(tr('無料プランでは各項目1つまで。2つ以上を同時に選ぶには有料プランです。', 'Free plan: one value per filter. Selecting several at once needs the paid plan.'));
   };
   useEffect(() => { AsyncStorage.getItem('premium').then((v) => { if (v === '1') setPremium(true); }).catch(() => {}); }, []);
   const setPremiumSaved = (v: boolean) => { setPremium(v); AsyncStorage.setItem('premium', v ? '1' : '0').catch(() => {}); };
   useEffect(() => { AsyncStorage.getItem('favs').then((v) => { if (v) setFavs(JSON.parse(v)); }).catch(() => {}); }, []);
   const toggleFav = (id: string) => {
-    if (!favs.includes(id) && !premium && favs.length >= FREE_FAVS) { setLockHint(`お気に入りは無料プランでは${FREE_FAVS}校まで。無制限は有料プランです。`); return; }
+    if (!favs.includes(id) && !premium && favs.length >= FREE_FAVS) { setLockHint(tr(`お気に入りは無料プランでは${FREE_FAVS}校まで。無制限は有料プランです。`, `Free plan: up to ${FREE_FAVS} favorites. Unlimited needs the paid plan.`)); return; }
     toggleFavRaw(id);
   };
   const toggleFavRaw = (id: string) => setFavs((cur) => {
@@ -108,44 +116,44 @@ export default function App() {
     <View style={st.root}>
       <StatusBar style="auto" />
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Text style={st.title}>アメリカ大学検索</Text>
-        <Pressable onPress={() => setShowPlan(true)}><Text style={st.link}>{premium ? '👑 有料プラン' : '無料プラン ▸'}</Text></Pressable>
+        <Text style={st.title}>{tr('アメリカ大学検索', 'US College Search')}</Text>
+        <View style={{ flexDirection: 'row' }}><Pressable onPress={switchLang}><Text style={[st.link, { marginRight: 14 }]}>{lang === 'ja' ? 'English' : '日本語'}</Text></Pressable><Pressable onPress={() => setShowPlan(true)}><Text style={st.link}>{premium ? tr('👑 有料プラン', '👑 Paid plan') : tr('無料プラン ▸', 'Free plan ▸')}</Text></Pressable></View>
       </View>
       {lockHint && (
         <Pressable onPress={() => { setLockHint(null); setShowPlan(true); }} style={st.lockBar}>
-          <Text style={st.lockText}>🔒 {lockHint}(タップでプランを見る)</Text>
+          <Text style={st.lockText}>🔒 {lockHint}{tr('(タップでプランを見る)', ' (tap to see plans)')}</Text>
         </Pressable>)}
-      <TextInput style={st.input} placeholder="学校名・州・スポーツ・区分で検索 (例: 野球, CA, NCAA D1, NWAC)" placeholderTextColor="#888" value={query} onChangeText={setQuery} />
+      <TextInput style={st.input} placeholder={tr('学校名・州・スポーツ・区分で検索 (例: 野球, CA, NCAA D1, NWAC)', 'Search school, state, sport, division (e.g. baseball, CA, NCAA D1, NWAC)')} placeholderTextColor="#888" value={query} onChangeText={setQuery} />
       <View style={st.row}>
         {DIVISIONS.map((item) => (
-          <Chip key={item.key} label={item.label} on={item.key === 'ALL' ? divisions.length === 0 : divisions.includes(item.key as Division)}
+          <Chip key={item.key} label={item.key === 'ALL' ? tr('すべて', 'All') : item.label} on={item.key === 'ALL' ? divisions.length === 0 : divisions.includes(item.key as Division)}
             onPress={() => { if (item.key === 'ALL') setDivisions([]); else toggleIn<Division>(setDivisions, item.key as Division); setConfSel([]); }} />))}
       </View>
       <View style={st.row}>
-        <Chip label="4年制" on={level === '4year'} onPress={() => setLevel(level === '4year' ? 'ALL' : '4year')} />
-        <Chip label="短大" on={level === '2year'} onPress={() => setLevel(level === '2year' ? 'ALL' : '2year')} />
-        <Chip label="アスリート奨学金あり" on={scholarshipOnly} onPress={() => setScholarshipOnly(!scholarshipOnly)} />
+        <Chip label={tr('4年制', '4-year')} on={level === '4year'} onPress={() => setLevel(level === '4year' ? 'ALL' : '4year')} />
+        <Chip label={tr('短大', 'Junior college')} on={level === '2year'} onPress={() => setLevel(level === '2year' ? 'ALL' : '2year')} />
+        <Chip label={tr('アスリート奨学金あり', 'Athletic scholarships')} on={scholarshipOnly} onPress={() => setScholarshipOnly(!scholarshipOnly)} />
       </View>
       <View style={st.row}>
-        <Chip label="★お気に入り" on={favOnly} onPress={() => setFavOnly(!favOnly)} />
+        <Chip label={tr('★お気に入り', '★ Favorites')} on={favOnly} onPress={() => setFavOnly(!favOnly)} />
         {[15000, 25000, 40000].map((c) => (
-          <Chip key={c} label={`州外学費 $${c / 1000}K以下`} on={maxCost === c} onPress={() => setMaxCost(maxCost === c ? null : c)} />))}
+          <Chip key={c} label={tr(`州外学費 $${c / 1000}K以下`, `Out-of-state ≤ $${c / 1000}K`)} on={maxCost === c} onPress={() => setMaxCost(maxCost === c ? null : c)} />))}
       </View>
       <View style={st.row}>
-        <Text style={[st.sub, { alignSelf: 'center', marginRight: 6 }]}>並び替え:</Text>
-        <Chip label="名前順" on={sortKey === 'name'} onPress={() => setSortKey('name')} />
-        <Chip label="学費が安い順" on={sortKey === 'cost'} onPress={() => setSortKey('cost')} />
-        <Chip label="アスリート奨学金%が高い順" on={sortKey === 'pct'} onPress={() => setSortKey('pct')} />
+        <Text style={[st.sub, { alignSelf: 'center', marginRight: 6 }]}>{tr('並び替え:', 'Sort:')}</Text>
+        <Chip label={tr('名前順', 'Name')} on={sortKey === 'name'} onPress={() => setSortKey('name')} />
+        <Chip label={tr('学費が安い順', 'Lowest cost')} on={sortKey === 'cost'} onPress={() => setSortKey('cost')} />
+        <Chip label={tr('アスリート奨学金%が高い順', 'Highest athletic aid %')} on={sortKey === 'pct'} onPress={() => setSortKey('pct')} />
       </View>
       <View style={st.row}>
-        <Chip label={stateSel.length ? `州: ${stateSel.map((x) => stateJa[x] ?? x).join('・')}` : '州で絞る ▾'} on={stateSel.length > 0} onPress={() => setPicker('state')} />
-        <Chip label={confSel.length ? `リーグ: ${confSel.length}件` : 'リーグ(カンファレンス)で絞る ▾'} on={confSel.length > 0} onPress={() => setPicker('conf')} />
-        <Chip label={sportSel.length ? `競技: ${sportSel.map((n) => sportList.find((x) => x.name === n)?.ja ?? n).join('・')}` : '競技で絞る(チア含む) ▾'} on={sportSel.length > 0} onPress={() => setPicker('sport')} />
+        <Chip label={stateSel.length ? `${tr('州', 'State')}: ${stateSel.map(stName).join(tr('・', ', '))}` : tr('州で絞る ▾', 'Filter by state ▾')} on={stateSel.length > 0} onPress={() => setPicker('state')} />
+        <Chip label={confSel.length ? tr(`リーグ: ${confSel.length}件`, `Conference: ${confSel.length}`) : tr('リーグ(カンファレンス)で絞る ▾', 'Filter by conference ▾')} on={confSel.length > 0} onPress={() => setPicker('conf')} />
+        <Chip label={sportSel.length ? `${tr('競技', 'Sport')}: ${sportSel.map((n) => spName(n, sportList.find((x) => x.name === n)?.ja)).join(tr('・', ', '))}` : tr('競技で絞る(チア含む) ▾', 'Filter by sport (incl. cheer) ▾')} on={sportSel.length > 0} onPress={() => setPicker('sport')} />
       </View>
       <Modal visible={picker !== null} animationType="slide" onRequestClose={() => setPicker(null)}>
         <View style={st.root}>
-          <Text style={st.title}>{(picker === 'state' ? '州を選ぶ' : picker === 'sport' ? '競技を選ぶ' : 'リーグを選ぶ') + (premium ? '(複数可)' : '(無料プランは1つ)')}</Text>
-          {picker === 'conf' && <Text style={st.sub}>※ リーグ名はNCAA加盟校のみ。{divisions.length === 0 ? '' : `${divisions.join('・')}のリーグを表示中。`}</Text>}
+          <Text style={st.title}>{(picker === 'state' ? tr('州を選ぶ', 'Choose a state') : picker === 'sport' ? tr('競技を選ぶ', 'Choose a sport') : tr('リーグを選ぶ', 'Choose a conference')) + (premium ? tr('(複数可)', ' (multiple OK)') : tr('(無料プランは1つ)', ' (free plan: one)'))}</Text>
+          {picker === 'conf' && <Text style={st.sub}>{tr('※ リーグ名はNCAA加盟校のみ。', '* Conferences are listed for NCAA schools only. ')}{divisions.length === 0 ? '' : tr(`${divisions.join('・')}のリーグを表示中。`, `Showing ${divisions.join(', ')} conferences.`)}</Text>}
           <FlatList
             data={picker === 'state' ? states : picker === 'sport' ? sportList.map((x) => x.name) : conferences}
             keyExtractor={(x) => x}
@@ -154,32 +162,32 @@ export default function App() {
               const on = sel.includes(item);
               return (
                 <Pressable style={st.pickRow} onPress={() => (picker === 'state' ? pickToggle(stateSel, setStateSel, item) : picker === 'sport' ? pickToggle(sportSel, setSportSel, item) : pickToggle(confSel, setConfSel, item))}>
-                  <Text style={[st.name, on && { color: '#0a5' }]}>{on ? '✓ ' : ''}{picker === 'state' ? `${stateJa[item] ?? item} (${item})` : picker === 'sport' ? `${sportList.find((x) => x.name === item)?.ja ?? item} (${item})` : item}</Text>
+                  <Text style={[st.name, on && { color: '#0a5' }]}>{on ? '✓ ' : ''}{picker === 'state' ? `${stName(item)} (${item})` : picker === 'sport' && lang === 'ja' ? `${sportList.find((x) => x.name === item)?.ja ?? item} (${item})` : item}</Text>
                 </Pressable>);
             }} />
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingTop: 8 }}>
-            <Pressable onPress={() => (picker === 'state' ? setStateSel([]) : picker === 'sport' ? setSportSel([]) : setConfSel([]))}><Text style={st.link}>選択をクリア</Text></Pressable>
-            <Pressable onPress={() => setPicker(null)}><Text style={st.link}>完了</Text></Pressable>
+            <Pressable onPress={() => (picker === 'state' ? setStateSel([]) : picker === 'sport' ? setSportSel([]) : setConfSel([]))}><Text style={st.link}>{tr('選択をクリア', 'Clear')}</Text></Pressable>
+            <Pressable onPress={() => setPicker(null)}><Text style={st.link}>{tr('完了', 'Done')}</Text></Pressable>
           </View>
         </View>
       </Modal>
-      {cmp.length > 0 && <Pressable onPress={() => setShowCmp(true)} style={st.cmpBar}><Text style={st.chipTextOn}>比較する({cmp.length}校) →</Text></Pressable>}
+      {cmp.length > 0 && <Pressable onPress={() => setShowCmp(true)} style={st.cmpBar}><Text style={st.chipTextOn}>{tr(`比較する(${cmp.length}校) →`, `Compare (${cmp.length}) →`)}</Text></Pressable>}
       {(() => {
         const pts = results.filter((x) => x.lat != null && x.lng != null).slice(0, 10);
         return pts.length >= 2 ? (
           <Pressable onPress={() => Linking.openURL(`https://www.google.com/maps/dir/${pts.map((x) => `${x.lat},${x.lng}`).join('/')}`)}>
-            <Text style={st.link}>🗺️ 上位{pts.length}校を地図で見る(Googleマップ)</Text>
+            <Text style={st.link}>🗺️ {tr(`上位${pts.length}校を地図で見る(Googleマップ)`, `Map the top ${pts.length} results (Google Maps)`)}</Text>
           </Pressable>) : null;
       })()}
-      <Text style={st.count}>{results.length} 校 ・ データ更新: {updatedAt ? updatedAt.slice(0, 10) : '同梱版'}{source === 'remote' ? '(最新)' : ''}</Text>
+      <Text style={st.count}>{results.length} {tr('校', 'schools')} ・ {tr('データ更新', 'Data updated')}: {updatedAt ? updatedAt.slice(0, 10) : tr('同梱版', 'bundled')}{source === 'remote' ? tr('(最新)', ' (latest)') : ''}</Text>
       <FlatList data={results} keyExtractor={(x) => x.id} renderItem={({ item }) => (
         <Pressable style={st.card} onPress={() => setSelected(item)}>
-          <Text style={st.name}>{favs.includes(item.id) ? '★ ' : ''}{item.nameJa ?? item.name}</Text>
-          <Text style={st.sub}>{item.name}</Text>
-          <Text style={st.meta}>{item.city}, {item.state} ・ {item.level === '4year' ? '4年制' : '短大'} ・ {item.division.startsWith(item.association) ? item.division : `${item.association} ${item.division}`}</Text>
-          <Text style={st.meta}>州外学費 {item.tuitionOutOfState != null ? `$${item.tuitionOutOfState.toLocaleString()}` : '—'}/年 ・ アスリート奨学金 {item.athleticScholarshipPct == null ? '—' : `最大${item.athleticScholarshipPct}%`}</Text>
-          <Pressable onPress={() => toggleCmp(item.id)}><Text style={st.link}>{cmp.includes(item.id) ? '✓ 比較に追加済み(タップで外す)' : cmp.length >= cmpLimit ? `比較は${cmpLimit}校まで` : '＋ 比較に追加'}</Text></Pressable>
-          <Text style={st.meta}>{item.sports.length ? item.sports.map((x) => x.nameJa).join('・') : '競技情報: 準備中'}</Text>
+          <Text style={st.name}>{favs.includes(item.id) ? '★ ' : ''}{lang === 'en' ? item.name : item.nameJa ?? item.name}</Text>
+          {lang === 'ja' && <Text style={st.sub}>{item.name}</Text>}
+          <Text style={st.meta}>{item.city}, {item.state} ・ {item.level === '4year' ? tr('4年制', '4-year') : tr('短大', 'Junior college')} ・ {item.division.startsWith(item.association) ? item.division : `${item.association} ${item.division}`}</Text>
+          <Text style={st.meta}>{tr('州外学費', 'Out-of-state')} {item.tuitionOutOfState != null ? `$${item.tuitionOutOfState.toLocaleString()}` : '—'}{tr('/年', '/yr')} ・ {tr('アスリート奨学金', 'Athletic aid')} {item.athleticScholarshipPct == null ? '—' : tr(`最大${item.athleticScholarshipPct}%`, `up to ${item.athleticScholarshipPct}%`)}</Text>
+          <Pressable onPress={() => toggleCmp(item.id)}><Text style={st.link}>{cmp.includes(item.id) ? tr('✓ 比較に追加済み(タップで外す)', '✓ Added to compare (tap to remove)') : cmp.length >= cmpLimit ? tr(`比較は${cmpLimit}校まで`, `Compare limit: ${cmpLimit}`) : tr('＋ 比較に追加', '+ Add to compare')}</Text></Pressable>
+          <Text style={st.meta}>{item.sports.length ? item.sports.map((x) => spName(x.name, x.nameJa)).join(tr('・', ', ')) : tr('競技情報: 準備中', 'Sports: coming soon')}</Text>
         </Pressable>)} />
     </View>
   );
@@ -197,21 +205,36 @@ function LinkRow({ icon, label, desc, url }: { icon: string; label: string; desc
   );
 }
 
-const LEVEL_EXPLAIN: Record<string, string> = {
-  D1: 'NCAAで最も競技レベルが高いクラス', D2: 'NCAAの中間クラスで、奨学金が分割で出やすい',
-  D3: 'NCAAの学業重視クラス(運動奨学金は出ません)', NAIA: 'NCAAとは別の大学リーグで、小規模校が中心',
-  'NJCAA-D1': '短大リーグの最上位でフル奨学金も可能。4年制への編入ルートにもなる',
-  'NJCAA-D2': '短大リーグの中位(授業料までの奨学金)', 'NJCAA-D3': '短大リーグ(運動奨学金なし)',
-  CCCAA: 'カリフォルニア州の公立短大リーグ(運動奨学金なし)', NWAC: '北西部(ワシントン・オレゴン等)の短大リーグ',
+const LEVEL_EXPLAIN: Record<string, [string, string]> = {
+  D1: ['NCAAで最も競技レベルが高いクラス', 'the highest competition level in the NCAA'],
+  D2: ['NCAAの中間クラスで、奨学金が分割で出やすい', 'the middle NCAA tier; scholarships are usually split into partial awards'],
+  D3: ['NCAAの学業重視クラス(運動奨学金は出ません)', 'the academics-first NCAA tier (no athletic scholarships)'],
+  NAIA: ['NCAAとは別の大学リーグで、小規模校が中心', 'a separate college league, mostly smaller schools'],
+  'NJCAA-D1': ['短大リーグの最上位でフル奨学金も可能。4年制への編入ルートにもなる', 'the top junior-college league; full scholarships possible and a transfer path to 4-year schools'],
+  'NJCAA-D2': ['短大リーグの中位(授業料までの奨学金)', 'mid-tier junior-college league (aid up to tuition)'],
+  'NJCAA-D3': ['短大リーグ(運動奨学金なし)', 'junior-college league (no athletic scholarships)'],
+  CCCAA: ['カリフォルニア州の公立短大リーグ(運動奨学金なし)', 'California public community-college league (no athletic scholarships)'],
+  NWAC: ['北西部(ワシントン・オレゴン等)の短大リーグ', 'Northwest (WA, OR, etc.) community-college league'],
 };
 
 function summarize(sc: School) {
-  const sports = sc.sports.slice(0, 5).map((x) => x.nameJa).join('・');
-  const aid = sc.athleticAid && sc.athleticAid.total > 0 ? `運動部への奨学金は年間およそ$${Math.round(sc.athleticAid.total / 1000).toLocaleString()}K。` : '';
+  const en = tr('', 'x') === 'x';
+  const sp = (x: { name: string; nameJa: string }) => (en ? x.name : x.nameJa);
+  const sports = sc.sports.slice(0, 5).map(sp).join(tr('・', ', '));
+  const div = sc.division.startsWith(sc.association) ? sc.division : `${sc.association} ${sc.division}`;
+  const k = Math.round((sc.athleticAid?.total ?? 0) / 1000).toLocaleString();
+  const hasAid = !!sc.athleticAid && sc.athleticAid.total > 0;
+  const expl = tr(LEVEL_EXPLAIN[sc.division][0], LEVEL_EXPLAIN[sc.division][1]);
+  if (en) {
+    return `A ${sc.control === 'public' ? 'public' : 'private'} ${sc.level === '4year' ? '4-year college' : 'junior college'} in ${stateEn[sc.state] ?? sc.state}. ` +
+      `Member of ${div} (${expl}). ` +
+      `${sports ? `Sports include ${sports}${sc.sports.length > 5 ? ' and more' : ''} (${sc.sports.length} total). ` : ''}` +
+      `Athletic scholarships: ${sc.athleticScholarship ? 'yes' : 'no'}. ${hasAid ? `About $${k}K per year in aid to athletes.` : ''}`;
+  }
   return `${sc.state}州の${sc.control === 'public' ? '公立' : '私立'}${sc.level === '4year' ? '4年制大学' : '短大'}。` +
-    `${sc.division.startsWith(sc.association) ? sc.division : `${sc.association} ${sc.division}`}所属(${LEVEL_EXPLAIN[sc.division]})。` +
+    `${div}所属(${expl})。` +
     `${sports ? `競技は${sports}など${sc.sports.length}種目。` : ''}` +
-    `運動奨学金は${sc.athleticScholarship ? 'あり' : 'なし'}。${aid}`;
+    `運動奨学金は${sc.athleticScholarship ? 'あり' : 'なし'}。${hasAid ? `運動部への奨学金は年間およそ$${k}K。` : ''}`;
 }
 
 function Chip({ label, on, onPress }: { label: string; on: boolean; onPress: () => void }) {
@@ -227,104 +250,105 @@ function Detail({ school: sc, onBack, fav, onFav, showCheer, premium, onPlan }: 
   return (
     <ScrollView style={st.root} contentContainerStyle={{ paddingBottom: 48 }}>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-        <Pressable onPress={onBack}><Text style={st.link}>← 戻る</Text></Pressable>
-        <Pressable onPress={onFav}><Text style={st.link}>{fav ? '★ お気に入り済み' : '☆ お気に入りに追加'}</Text></Pressable>
+        <Pressable onPress={onBack}><Text style={st.link}>{tr('← 戻る', '← Back')}</Text></Pressable>
+        <Pressable onPress={onFav}><Text style={st.link}>{fav ? tr('★ お気に入り済み', '★ Favorited') : tr('☆ お気に入りに追加', '☆ Add to favorites')}</Text></Pressable>
       </View>
-      <Text style={st.title}>{sc.nameJa ?? sc.name}</Text>
-      <Text style={st.sub}>{sc.name}</Text>
+      <Text style={st.title}>{getLang() === 'en' ? sc.name : sc.nameJa ?? sc.name}</Text>
+      {getLang() === 'ja' && <Text style={st.sub}>{sc.name}</Text>}
       <View style={st.summary}>
-        <Text style={st.name}>ひとことで言うと</Text>
+        <Text style={st.name}>{tr('ひとことで言うと', 'At a glance')}</Text>
         <Text style={st.meta}>{summarize(sc)}</Text>
       </View>
-      <Text style={st.meta}>所在地: {sc.city}, {sc.state}</Text>
-      <Text style={st.meta}>種別: {sc.level === '4year' ? '4年制' : '短大'} / {sc.control === 'public' ? '公立' : '私立'}</Text>
-      <Text style={st.meta}>所属: {sc.association} / {sc.division}{sc.conference ? ` / ${sc.conference}` : ''}</Text>
-      <Text style={st.meta}>学費(年): 州内 {money(sc.tuitionInState)} / 州外 {money(sc.tuitionOutOfState)}</Text>
-      <Text style={st.meta}>アスリート奨学金: {sc.athleticScholarship ? 'あり' : 'なし'}</Text>
+      {getLang() === 'en' && !!(sc.tuitionLines?.length || sc.scholarshipSections?.length || sc.intlAidNote || sc.cheerNote) && <Text style={st.warn}>Note: the detailed research notes below (costs, scholarships, cheer) are in Japanese for now; English versions are coming.</Text>}
+      <Text style={st.meta}>{tr('所在地', 'Location')}: {sc.city}, {sc.state}</Text>
+      <Text style={st.meta}>{tr('種別', 'Type')}: {sc.level === '4year' ? tr('4年制', '4-year') : tr('短大', 'Junior college')} / {sc.control === 'public' ? tr('公立', 'Public') : tr('私立', 'Private')}</Text>
+      <Text style={st.meta}>{tr('所属', 'Affiliation')}: {sc.association} / {sc.division}{sc.conference ? ` / ${sc.conference}` : ''}</Text>
+      <Text style={st.meta}>{tr('学費(年)', 'Tuition (yr)')}: {tr('州内', 'In-state')} {money(sc.tuitionInState)} / {tr('州外', 'Out-of-state')} {money(sc.tuitionOutOfState)}</Text>
+      <Text style={st.meta}>{tr('アスリート奨学金', 'Athletic scholarships')}: {sc.athleticScholarship ? tr('あり', 'Yes') : tr('なし', 'No')}</Text>
       <View style={st.summary}>
-        <Text style={st.name}>英語スコアの目安(留学生の出願)</Text>
+        <Text style={st.name}>{tr('英語スコアの目安(留学生の出願)', 'English test scores (international applicants)')}</Text>
         {premium ? (
           <>
-            <Text style={st.meta}>{sc.englishReq ?? 'この学校は未調査です(順次追加中)。'}</Text>
-            {!!sc.englishReq && <Text style={st.linkDesc}>確認日: {sc.englishCheckedAt ?? '不明'} ・ 年度や学部で変わるため、出願前に公式サイトで確認してください。</Text>}
+            <Text style={st.meta}>{sc.englishReq ? engText(sc.englishReq) : tr('この学校は未調査です(順次追加中)。', 'Not researched yet (being added gradually).')}</Text>
+            {!!sc.englishReq && <Text style={st.linkDesc}>{tr('確認日', 'Checked')}: {sc.englishCheckedAt ?? tr('不明', 'unknown')} ・ {tr('年度や学部で変わるため、出願前に公式サイトで確認してください。', 'Requirements vary by year and program; confirm on the official site before applying.')}</Text>}
           </>
         ) : (
           <Pressable onPress={onPlan}>
-            <Text style={st.meta}>🔒 有料プランで、公式サイトを開かなくてもTOEFL・IELTSなどの目安をここで見られます。</Text>
-            <Text style={st.link}>プランを見る ▸</Text>
+            <Text style={st.meta}>{tr('🔒 有料プランで、公式サイトを開かなくてもTOEFL・IELTSなどの目安をここで見られます。', '🔒 With the paid plan, see TOEFL/IELTS guidance here without opening the school site.')}</Text>
+            <Text style={st.link}>{tr('プランを見る ▸', 'See plans ▸')}</Text>
           </Pressable>)}
       </View>
       {(
         <View style={st.summary}>
-          <Text style={st.name}>アスリート奨学金の最大割合</Text>
-          <Text style={st.meta}>{sc.athleticScholarshipPct == null ? '—' : sc.athleticScholarshipPct === 0 ? '0%(運動奨学金なし)' : `最大 ${sc.athleticScholarshipPct}%まで(総費用に対して)`}</Text>
+          <Text style={st.name}>{tr('アスリート奨学金の最大割合', 'Max athletic scholarship share')}</Text>
+          <Text style={st.meta}>{sc.athleticScholarshipPct == null ? '—' : sc.athleticScholarshipPct === 0 ? tr('0%(運動奨学金なし)', '0% (no athletic scholarships)') : tr(`最大 ${sc.athleticScholarshipPct}%まで(総費用に対して)`, `Up to ${sc.athleticScholarshipPct}% (of total cost)`)}</Text>
           {sc.division === 'NWAC' && <Text style={st.linkDesc}>{sc.athleticScholarshipMax}</Text>}
           {sc.athleticScholarshipPct != null && sc.athleticScholarshipPct > 0 && (
-            <Text style={st.linkDesc}>{sc.division === 'NJCAA-D2' ? '授業料・教材のみが対象のため、総費用に対する目安の割合です。' : sc.athleticScholarshipPct === 100 ? '全額まで可能ですが、実際はチームの上限内で選手ごとに異なり、部分奨学金が多いです。' : ''}</Text>)}
+            <Text style={st.linkDesc}>{sc.division === 'NJCAA-D2' ? tr('授業料・教材のみが対象のため、総費用に対する目安の割合です。', 'Covers tuition and materials only, so this is a rough share of total cost.') : sc.athleticScholarshipPct === 100 ? tr('全額まで可能ですが、実際はチームの上限内で選手ごとに異なり、部分奨学金が多いです。', 'Full rides are possible, but awards vary by athlete within team limits and partial awards are common.') : ''}</Text>)}
         </View>)}
       {showCheer && (
       <View style={st.summary}>
-        <Text style={st.name}>チア・ダンス・スタント</Text>
-        <Text style={st.meta}>{sc.cheerNote ?? 'チーム情報なし(未確認)'}</Text>
-        {!!sc.cheerNote && <Text style={st.linkDesc}>{CHEER_AID_NOTE}</Text>}
+        <Text style={st.name}>{tr('チア・ダンス・スタント', 'Cheer / Dance / Stunt')}</Text>
+        <Text style={st.meta}>{sc.cheerNote ?? tr('チーム情報なし(未確認)', 'No team info (unconfirmed)')}</Text>
+        {!!sc.cheerNote && getLang() === 'ja' && <Text style={st.linkDesc}>{CHEER_AID_NOTE}</Text>}
       </View>)}
-      <Text style={st.meta}>平均ネットプライス(奨学金差引後・米国学生): {money(sc.avgNetPrice ?? null)}/年</Text>
+      <Text style={st.meta}>{tr('平均ネットプライス(奨学金差引後・米国学生)', 'Average net price (after grants, US students)')}: {money(sc.avgNetPrice ?? null)}{tr('/年', '/yr')}</Text>
       {sc.tuitionLines && sc.tuitionLines.length > 0 && (
         <View style={st.summary}>
-          <Text style={st.name}>学費・費用(留学生の目安)</Text>
+          <Text style={st.name}>{tr('学費・費用(留学生の目安)', 'Costs (guide for international students)')}</Text>
           {sc.tuitionLines.map((t) => <Text key={t} style={st.meta}>・{t}</Text>)}
           {!!sc.tuitionResearch && <Text style={[st.meta, { marginTop: 6 }]}>{sc.tuitionResearch}</Text>}
-          <Text style={st.linkDesc}>数値は米国教育省(College Scorecard)ベースの概算と個別調査メモです。最新は学校の公式ページで確認してください。</Text>
+          <Text style={st.linkDesc}>{tr('数値は米国教育省(College Scorecard)ベースの概算と個別調査メモです。最新は学校の公式ページで確認してください。', 'Figures are estimates based on US Dept. of Education (College Scorecard) data plus per-school research notes. Confirm the latest on the official site.')}</Text>
         </View>)}
       {sc.scholarshipSections && sc.scholarshipSections.length > 0 ? (
         <View style={st.summary}>
-          <Text style={st.name}>奨学金制度</Text>
+          <Text style={st.name}>{tr('奨学金制度', 'Scholarships')}</Text>
           {sc.scholarshipSections.map((x) => (
             <View key={x.title} style={{ marginTop: 6 }}>
               <Text style={st.meta}>■ {x.title}</Text>
               <Text style={st.meta}>{x.text}</Text>
             </View>))}
-          <Text style={st.linkDesc}>確認日: {sc.intlAidCheckedAt ?? '不明'} ・ 最新は必ず学校の公式ページで確認してください</Text>
-          {!!sc.verifyNote && <Text style={st.linkDesc}>検証: {sc.verifyNote}</Text>}
+          <Text style={st.linkDesc}>{tr('確認日', 'Checked')}: {sc.intlAidCheckedAt ?? tr('不明', 'unknown')} ・ {tr('最新は必ず学校の公式ページで確認してください', 'Always confirm the latest on the official site')}</Text>
+          {!!sc.verifyNote && <Text style={st.linkDesc}>{tr('検証', 'Verification')}: {sc.verifyNote}</Text>}
         </View>
       ) : sc.intlAidNote ? (
         <View style={st.summary}>
-          <Text style={st.name}>{sc.intlAidAuto ? '留学生向け情報(個別調査前の目安)' : '留学生向け情報(調査メモ)'}</Text>
+          <Text style={st.name}>{sc.intlAidAuto ? tr('留学生向け情報(個別調査前の目安)', 'International-student info (rough estimate, not yet individually researched)') : tr('留学生向け情報(調査メモ)', 'International-student info (research notes)')}</Text>
           <Text style={st.meta}>{sc.intlAidNote}</Text>
-          <Text style={st.linkDesc}>{sc.intlAidAuto ? '個別の調査は順次進めています' : `確認日: ${sc.intlAidCheckedAt ?? '不明'}`} ・ 最新は必ず学校の公式ページで確認してください</Text>
+          <Text style={st.linkDesc}>{sc.intlAidAuto ? tr('個別の調査は順次進めています', 'Individual research is ongoing') : `${tr('確認日', 'Checked')}: ${sc.intlAidCheckedAt ?? tr('不明', 'unknown')}`} ・ {tr('最新は必ず学校の公式ページで確認してください', 'Always confirm the latest on the official site')}</Text>
         </View>) : null}
-      <Text style={[st.name, { marginTop: 12 }]}>奨学金ルール({aidRules[sc.division].title})</Text>
-      {aidRules[sc.division].points.map((t) => <Text key={t} style={st.meta}>・{t}</Text>)}
-      <Text style={[st.name, { marginTop: 12 }]}>スポーツ</Text>
+      <Text style={[st.name, { marginTop: 12 }]}>{tr('奨学金ルール', 'Scholarship rules')} ({aidRules[sc.division].title})</Text>
+      {aidRules[sc.division].points.map((t, i) => <Text key={t} style={st.meta}>・{getLang() === 'en' ? aidRules[sc.division].pointsEn[i] ?? t : t}</Text>)}
+      <Text style={[st.name, { marginTop: 12 }]}>{tr('スポーツ', 'Sports')}</Text>
       {sc.sports.map((x) => (
-        <Text key={x.name} style={st.meta}>・{x.nameJa} ({x.name}) {x.gender === 'M' ? '男子' : x.gender === 'W' ? '女子' : '男女'}</Text>))}
-      <Text style={[st.name, { marginTop: 12 }]}>リンク(タップで開く)</Text>
-      {sc.lat != null && sc.lng != null && <LinkRow icon="🗺️" label="地図で見る(Googleマップ)" desc={`${sc.city}, ${sc.state} の場所を開きます`} url={`https://www.google.com/maps/search/?api=1&query=${sc.lat},${sc.lng}`} />}
-      <LinkRow icon="🏫" label="学校の公式サイト" desc="学部・学費・キャンパスなど学校全体の情報" url={sc.website} />
-      <LinkRow icon="🏅" label="運動部(アスレチックス)サイト" desc={sc.athleticsUrl ? 'チームのスケジュール・コーチ・選手募集の連絡先' : '運動部の公式サイトをGoogleで探します'} url={sc.athleticsUrl ?? google(`${sc.name} athletics official site`)} />
-      <LinkRow icon="💰" label={sc.scholarshipUrl ? 'スカラーシップ(奨学金)ページ' : 'スカラーシップ(奨学金)を探す'} desc={sc.scholarshipUrl ? '運動奨学金・留学生向け奨学金の案内ページ' : 'この学校のサイト内から、運動奨学金・留学生向け奨学金のページを検索します'} url={sc.scholarshipUrl ?? google(`site:${host(sc.website)} athletic scholarship international student`)} />
-      <LinkRow icon="✈️" label="留学生の出願ページを探す" desc="出願方法・必要書類・英語スコアなど留学生向けの案内を検索します" url={google(`site:${host(sc.website)} international admissions`)} />
-      {!sc.verified && <Text style={st.warn}>※ データ出典: 米国教育省 EADA 2024-25 / College Scorecard。奨学金・競技は年度で変わるため、出願前に必ず公式サイトで確認してください。</Text>}
+        <Text key={x.name} style={st.meta}>・{getLang() === 'en' ? x.name : `${x.nameJa} (${x.name})`} {x.gender === 'M' ? tr('男子', "Men's") : x.gender === 'W' ? tr('女子', "Women's") : tr('男女', 'Co-ed')}</Text>))}
+      <Text style={[st.name, { marginTop: 12 }]}>{tr('リンク(タップで開く)', 'Links (tap to open)')}</Text>
+      {sc.lat != null && sc.lng != null && <LinkRow icon="🗺️" label={tr('地図で見る(Googleマップ)', 'View on map (Google Maps)')} desc={tr(`${sc.city}, ${sc.state} の場所を開きます`, `Open ${sc.city}, ${sc.state}`)} url={`https://www.google.com/maps/search/?api=1&query=${sc.lat},${sc.lng}`} />}
+      <LinkRow icon="🏫" label={tr('学校の公式サイト', 'Official school website')} desc={tr('学部・学費・キャンパスなど学校全体の情報', 'Programs, tuition, campus and general info')} url={sc.website} />
+      <LinkRow icon="🏅" label={tr('運動部(アスレチックス)サイト', 'Athletics website')} desc={sc.athleticsUrl ? tr('チームのスケジュール・コーチ・選手募集の連絡先', 'Schedules, coaches and recruiting contacts') : tr('運動部の公式サイトをGoogleで探します', 'Search Google for the athletics site')} url={sc.athleticsUrl ?? google(`${sc.name} athletics official site`)} />
+      <LinkRow icon="💰" label={sc.scholarshipUrl ? tr('スカラーシップ(奨学金)ページ', 'Scholarship page') : tr('スカラーシップ(奨学金)を探す', 'Find scholarships')} desc={sc.scholarshipUrl ? tr('運動奨学金・留学生向け奨学金の案内ページ', 'Athletic and international scholarship info') : tr('この学校のサイト内から、運動奨学金・留学生向け奨学金のページを検索します', 'Search this school\'s site for athletic / international scholarships')} url={sc.scholarshipUrl ?? google(`site:${host(sc.website)} athletic scholarship international student`)} />
+      <LinkRow icon="✈️" label={tr('留学生の出願ページを探す', 'Find international admissions page')} desc={tr('出願方法・必要書類・英語スコアなど留学生向けの案内を検索します', 'Search for how to apply, documents and English score requirements')} url={google(`site:${host(sc.website)} international admissions`)} />
+      {!sc.verified && <Text style={st.warn}>{tr('※ データ出典: 米国教育省 EADA 2024-25 / College Scorecard。奨学金・競技は年度で変わるため、出願前に必ず公式サイトで確認してください。', '* Data sources: US Dept. of Education EADA 2024-25 / College Scorecard. Scholarships and sports change yearly; always confirm on the official site before applying.')}</Text>}
     </ScrollView>
   );
 }
 
 function PlanScreen({ premium, onSet, onBack }: { premium: boolean; onSet: (v: boolean) => void; onBack: () => void }) {
   const rows: [string, string, string][] = [
-    ['検索・区分(NCAA/NAIAなど)の絞り込み', '○', '○'],
-    ['州・リーグ・競技の絞り込み', '各1つ', '複数同時'],
-    ['お気に入り', `${FREE_FAVS}校`, '無制限'],
-    ['学校の比較', `${FREE_CMP}校`, `${PAID_CMP}校`],
-    ['英語スコア(TOEFL等)の目安をアプリ内で表示', '—', '○'],
+    [tr('検索・区分(NCAA/NAIAなど)の絞り込み', 'Search & division filters (NCAA/NAIA etc.)'), '○', '○'],
+    [tr('州・リーグ・競技の絞り込み', 'State / conference / sport filters'), tr('各1つ', '1 each'), tr('複数同時', 'Multiple')],
+    [tr('お気に入り', 'Favorites'), tr(`${FREE_FAVS}校`, `${FREE_FAVS}`), tr('無制限', 'Unlimited')],
+    [tr('学校の比較', 'Compare schools'), tr(`${FREE_CMP}校`, `${FREE_CMP}`), tr(`${PAID_CMP}校`, `${PAID_CMP}`)],
+    [tr('英語スコア(TOEFL等)の目安をアプリ内で表示', 'English test scores (TOEFL etc.) shown in-app'), '—', '○'],
   ];
   return (
     <ScrollView style={st.root} contentContainerStyle={{ paddingBottom: 48 }}>
-      <Pressable onPress={onBack}><Text style={st.link}>← 戻る</Text></Pressable>
-      <Text style={st.title}>プラン</Text>
+      <Pressable onPress={onBack}><Text style={st.link}>{tr('← 戻る', '← Back')}</Text></Pressable>
+      <Text style={st.title}>{tr('プラン', 'Plans')}</Text>
       <View style={st.summary}>
-        <Text style={st.name}>有料プラン 月額 ¥500(仮)</Text>
-        <Text style={st.meta}>年額 ¥3,900(仮)・最初の7日間は無料(予定)</Text>
-        <Text style={st.linkDesc}>価格は検討中の仮の金額です。まだ決済はつながっていません。</Text>
+        <Text style={st.name}>{tr('有料プラン 月額 ¥500(仮)', 'Paid plan ¥500/month (provisional)')}</Text>
+        <Text style={st.meta}>{tr('年額 ¥3,900(仮)・最初の7日間は無料(予定)', '¥3,900/year (provisional) ・ 7-day free trial (planned)')}</Text>
+        <Text style={st.linkDesc}>{tr('価格は検討中の仮の金額です。まだ決済はつながっていません。', 'Prices are provisional. Payments are not connected yet.')}</Text>
       </View>
       {rows.map(([label, a, b]) => (
         <View key={label} style={st.cmpRow}>
@@ -334,13 +358,13 @@ function PlanScreen({ premium, onSet, onBack }: { premium: boolean; onSet: (v: b
         </View>))}
       <View style={[st.cmpRow, { borderBottomWidth: 0 }]}>
         <Text style={[st.linkDesc, { flex: 1 }]}> </Text>
-        <Text style={[st.linkDesc, { width: 64, textAlign: 'center' }]}>無料</Text>
-        <Text style={[st.linkDesc, { width: 72, textAlign: 'center' }]}>有料</Text>
+        <Text style={[st.linkDesc, { width: 64, textAlign: 'center' }]}>{tr('無料', 'Free')}</Text>
+        <Text style={[st.linkDesc, { width: 72, textAlign: 'center' }]}>{tr('有料', 'Paid')}</Text>
       </View>
       <Pressable style={st.cmpBar} onPress={() => onSet(!premium)}>
-        <Text style={st.chipTextOn}>{premium ? '無料プランに戻す(試用)' : '有料プランを試す(試用スイッチ・無料)'}</Text>
+        <Text style={st.chipTextOn}>{premium ? tr('無料プランに戻す(試用)', 'Back to free plan (trial switch)') : tr('有料プランを試す(試用スイッチ・無料)', 'Try the paid plan (free trial switch)')}</Text>
       </Pressable>
-      <Text style={st.warn}>※ これは動作確認用の試用スイッチです。正式版では決済後に自動で有料になります。</Text>
+      <Text style={st.warn}>{tr('※ これは動作確認用の試用スイッチです。正式版では決済後に自動で有料になります。', '* This is a test switch. In the final version the paid plan turns on automatically after payment.')}</Text>
     </ScrollView>
   );
 }
@@ -348,28 +372,28 @@ function PlanScreen({ premium, onSet, onBack }: { premium: boolean; onSet: (v: b
 function Compare({ list, onBack, onRemove, showCheer }: { list: School[]; onBack: () => void; onRemove: (id: string) => void; showCheer: boolean }) {
   const money = (n: number | null | undefined) => (n == null ? '—' : `$${n.toLocaleString()}`);
   const rows: { label: string; val: (x: School) => string }[] = [
-    { label: '所在地', val: (x) => `${x.city}, ${x.state}` },
-    { label: '種別', val: (x) => `${x.level === '4year' ? '4年制' : '短大'} / ${x.control === 'public' ? '公立' : '私立'}` },
-    { label: '所属', val: (x) => `${x.division}${x.conference ? ` / ${x.conference}` : ''}` },
-    { label: '学費(州内)', val: (x) => money(x.tuitionInState) },
-    { label: '学費(州外・留学生)', val: (x) => money(x.tuitionOutOfState) },
-    { label: '平均ネットプライス', val: (x) => money(x.avgNetPrice) },
-    { label: 'アスリート奨学金(最大)', val: (x) => (x.athleticScholarshipPct == null ? '—' : x.athleticScholarshipPct === 0 ? '0%(なし)' : `最大${x.athleticScholarshipPct}%`) },
-    ...(showCheer ? [{ label: 'チア', val: (x: School) => (x.sports.some((sp: { name: string }) => sp.name === 'Cheerleading') ? 'あり' : '情報なし') }] : []),
-    { label: '競技数', val: (x) => `${x.sports.length}種目` },
+    { label: tr('所在地', 'Location'), val: (x) => `${x.city}, ${x.state}` },
+    { label: tr('種別', 'Type'), val: (x) => `${x.level === '4year' ? tr('4年制', '4-year') : tr('短大', 'Junior college')} / ${x.control === 'public' ? tr('公立', 'Public') : tr('私立', 'Private')}` },
+    { label: tr('所属', 'Affiliation'), val: (x) => `${x.division}${x.conference ? ` / ${x.conference}` : ''}` },
+    { label: tr('学費(州内)', 'Tuition (in-state)'), val: (x) => money(x.tuitionInState) },
+    { label: tr('学費(州外・留学生)', 'Tuition (out-of-state / intl)'), val: (x) => money(x.tuitionOutOfState) },
+    { label: tr('平均ネットプライス', 'Avg. net price'), val: (x) => money(x.avgNetPrice) },
+    { label: tr('アスリート奨学金(最大)', 'Athletic aid (max)'), val: (x) => (x.athleticScholarshipPct == null ? '—' : x.athleticScholarshipPct === 0 ? tr('0%(なし)', '0% (none)') : tr(`最大${x.athleticScholarshipPct}%`, `up to ${x.athleticScholarshipPct}%`)) },
+    ...(showCheer ? [{ label: tr('チア', 'Cheer'), val: (x: School) => (x.sports.some((sp: { name: string }) => sp.name === 'Cheerleading') ? tr('あり', 'Yes') : tr('情報なし', 'No info')) }] : []),
+    { label: tr('競技数', 'Sports'), val: (x) => tr(`${x.sports.length}種目`, `${x.sports.length}`) },
   ];
   return (
     <ScrollView style={st.root} contentContainerStyle={{ paddingBottom: 48 }}>
-      <Pressable onPress={onBack}><Text style={st.link}>← 戻る</Text></Pressable>
-      <Text style={st.title}>学校を比較</Text>
+      <Pressable onPress={onBack}><Text style={st.link}>{tr('← 戻る', '← Back')}</Text></Pressable>
+      <Text style={st.title}>{tr('学校を比較', 'Compare schools')}</Text>
       <ScrollView horizontal>
         <View>
           <View style={st.cmpRow}>
             <Text style={[st.cmpLabel, st.name]}> </Text>
             {list.map((x) => (
               <View key={x.id} style={st.cmpCell}>
-                <Text style={st.name}>{x.nameJa ?? x.name}</Text>
-                <Pressable onPress={() => onRemove(x.id)}><Text style={st.linkDesc}>外す</Text></Pressable>
+                <Text style={st.name}>{getLang() === 'en' ? x.name : x.nameJa ?? x.name}</Text>
+                <Pressable onPress={() => onRemove(x.id)}><Text style={st.linkDesc}>{tr('外す', 'Remove')}</Text></Pressable>
               </View>))}
           </View>
           {rows.map((r) => (
@@ -379,7 +403,7 @@ function Compare({ list, onBack, onRemove, showCheer }: { list: School[]; onBack
             </View>))}
         </View>
       </ScrollView>
-      <Text style={st.warn}>※ 金額は目安です。最新は各校の公式ページで確認してください。</Text>
+      <Text style={st.warn}>{tr('※ 金額は目安です。最新は各校の公式ページで確認してください。', '* Amounts are estimates. Confirm the latest on each official site.')}</Text>
     </ScrollView>
   );
 }
