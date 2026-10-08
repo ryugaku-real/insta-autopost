@@ -8,6 +8,7 @@ import { aidRules } from './src/data/aidRules';
 import { stateJa } from './src/data/states';
 import { detectLang, getLang, Lang, setLang, stateEn, tr } from './src/i18n';
 import { engText } from './src/engText';
+import { dt, engData, noteEn, sectionTitleEn } from './src/engData';
 import { CHEER_AID_NOTE, limitHeader, sportLimits } from './src/data/athleticLimits';
 
 const DIVISIONS: { key: Division | 'ALL'; label: string }[] = [
@@ -247,20 +248,29 @@ function Chip({ label, on, onPress }: { label: string; on: boolean; onPress: () 
 
 function Detail({ school: sc, onBack, fav, onFav, showCheer, premium, onPlan }: { school: School; onBack: () => void; fav: boolean; onFav: () => void; showCheer: boolean; premium: boolean; onPlan: () => void }) {
   const money = (n: number | null) => (n == null ? '—' : `$${n.toLocaleString()}`);
-  return (
+  const miss = { n: 0 };
+  if (getLang() === 'en') {
+    if (sc.cheerNote) dt(sc.cheerNote, miss);
+    [sc.verifyNote, ...(sc.tuitionLines ?? []), ...(sc.scholarshipSections ?? []).map((x) => x.text), sc.division === 'NWAC' ? sc.athleticScholarshipMax : undefined]
+      .forEach((t) => { if (t && !(sc.intlAidNote && noteEn(sc.intlAidNote))) dt(t, miss); });
+    if (sc.intlAidNote && !noteEn(sc.intlAidNote)) miss.n++;
+  }
+  const noteBox = getLang() === 'en' && sc.intlAidNote ? noteEn(sc.intlAidNote) : null;
+  const showMiss = miss.n > 0;
+  const body = (
     <ScrollView style={st.root} contentContainerStyle={{ paddingBottom: 48 }}>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
         <Pressable onPress={onBack}><Text style={st.link}>{tr('← 戻る', '← Back')}</Text></Pressable>
         <Pressable onPress={onFav}><Text style={st.link}>{fav ? tr('★ お気に入り済み', '★ Favorited') : tr('☆ お気に入りに追加', '☆ Add to favorites')}</Text></Pressable>
       </View>
+      {showMiss && <Text style={st.warn}>Some research notes on this page are in Japanese only for now.</Text>}
       <Text style={st.title}>{getLang() === 'en' ? sc.name : sc.nameJa ?? sc.name}</Text>
       {getLang() === 'ja' && <Text style={st.sub}>{sc.name}</Text>}
       <View style={st.summary}>
         <Text style={st.name}>{tr('ひとことで言うと', 'At a glance')}</Text>
         <Text style={st.meta}>{summarize(sc)}</Text>
       </View>
-      {getLang() === 'en' && !!(sc.tuitionLines?.length || sc.scholarshipSections?.length || sc.intlAidNote || sc.cheerNote) && <Text style={st.warn}>Note: the detailed research notes below (costs, scholarships, cheer) are in Japanese for now; English versions are coming.</Text>}
-      <Text style={st.meta}>{tr('所在地', 'Location')}: {sc.city}, {sc.state}</Text>
+            <Text style={st.meta}>{tr('所在地', 'Location')}: {sc.city}, {sc.state}</Text>
       <Text style={st.meta}>{tr('種別', 'Type')}: {sc.level === '4year' ? tr('4年制', '4-year') : tr('短大', 'Junior college')} / {sc.control === 'public' ? tr('公立', 'Public') : tr('私立', 'Private')}</Text>
       <Text style={st.meta}>{tr('所属', 'Affiliation')}: {sc.association} / {sc.division}{sc.conference ? ` / ${sc.conference}` : ''}</Text>
       <Text style={st.meta}>{tr('学費(年)', 'Tuition (yr)')}: {tr('州内', 'In-state')} {money(sc.tuitionInState)} / {tr('州外', 'Out-of-state')} {money(sc.tuitionOutOfState)}</Text>
@@ -282,39 +292,45 @@ function Detail({ school: sc, onBack, fav, onFav, showCheer, premium, onPlan }: 
         <View style={st.summary}>
           <Text style={st.name}>{tr('アスリート奨学金の最大割合', 'Max athletic scholarship share')}</Text>
           <Text style={st.meta}>{sc.athleticScholarshipPct == null ? '—' : sc.athleticScholarshipPct === 0 ? tr('0%(運動奨学金なし)', '0% (no athletic scholarships)') : tr(`最大 ${sc.athleticScholarshipPct}%まで(総費用に対して)`, `Up to ${sc.athleticScholarshipPct}% (of total cost)`)}</Text>
-          {sc.division === 'NWAC' && <Text style={st.linkDesc}>{sc.athleticScholarshipMax}</Text>}
+          {sc.division === 'NWAC' && !!sc.athleticScholarshipMax && <Text style={st.linkDesc}>{dt(sc.athleticScholarshipMax, miss)}</Text>}
           {sc.athleticScholarshipPct != null && sc.athleticScholarshipPct > 0 && (
             <Text style={st.linkDesc}>{sc.division === 'NJCAA-D2' ? tr('授業料・教材のみが対象のため、総費用に対する目安の割合です。', 'Covers tuition and materials only, so this is a rough share of total cost.') : sc.athleticScholarshipPct === 100 ? tr('全額まで可能ですが、実際はチームの上限内で選手ごとに異なり、部分奨学金が多いです。', 'Full rides are possible, but awards vary by athlete within team limits and partial awards are common.') : ''}</Text>)}
         </View>)}
       {showCheer && (
       <View style={st.summary}>
         <Text style={st.name}>{tr('チア・ダンス・スタント', 'Cheer / Dance / Stunt')}</Text>
-        <Text style={st.meta}>{sc.cheerNote ?? tr('チーム情報なし(未確認)', 'No team info (unconfirmed)')}</Text>
+        <Text style={st.meta}>{sc.cheerNote ? dt(sc.cheerNote, miss) : tr('チーム情報なし(未確認)', 'No team info (unconfirmed)')}</Text>
         {!!sc.cheerNote && getLang() === 'ja' && <Text style={st.linkDesc}>{CHEER_AID_NOTE}</Text>}
       </View>)}
       <Text style={st.meta}>{tr('平均ネットプライス(奨学金差引後・米国学生)', 'Average net price (after grants, US students)')}: {money(sc.avgNetPrice ?? null)}{tr('/年', '/yr')}</Text>
       {sc.tuitionLines && sc.tuitionLines.length > 0 && (
         <View style={st.summary}>
           <Text style={st.name}>{tr('学費・費用(留学生の目安)', 'Costs (guide for international students)')}</Text>
-          {sc.tuitionLines.map((t) => <Text key={t} style={st.meta}>・{t}</Text>)}
-          {!!sc.tuitionResearch && <Text style={[st.meta, { marginTop: 6 }]}>{sc.tuitionResearch}</Text>}
+          {sc.tuitionLines.map((t) => <Text key={t} style={st.meta}>・{dt(t, miss)}</Text>)}
+          {!!sc.tuitionResearch && !noteBox && <Text style={[st.meta, { marginTop: 6 }]}>{dt(sc.tuitionResearch, miss)}</Text>}
           <Text style={st.linkDesc}>{tr('数値は米国教育省(College Scorecard)ベースの概算と個別調査メモです。最新は学校の公式ページで確認してください。', 'Figures are estimates based on US Dept. of Education (College Scorecard) data plus per-school research notes. Confirm the latest on the official site.')}</Text>
+        </View>)}
+      {!!noteBox && (
+        <View style={st.summary}>
+          <Text style={st.name}>International-student research notes</Text>
+          <Text style={st.meta}>{noteBox}</Text>
+          <Text style={st.linkDesc}>Checked: {sc.intlAidCheckedAt ?? 'unknown'} ・ Always confirm the latest on the official site</Text>
         </View>)}
       {sc.scholarshipSections && sc.scholarshipSections.length > 0 ? (
         <View style={st.summary}>
           <Text style={st.name}>{tr('奨学金制度', 'Scholarships')}</Text>
-          {sc.scholarshipSections.map((x) => (
+          {sc.scholarshipSections.filter((x) => !noteBox || engData(x.text) != null).map((x) => (
             <View key={x.title} style={{ marginTop: 6 }}>
-              <Text style={st.meta}>■ {x.title}</Text>
-              <Text style={st.meta}>{x.text}</Text>
+              <Text style={st.meta}>■ {getLang() === 'en' ? sectionTitleEn[x.title] ?? x.title : x.title}</Text>
+              <Text style={st.meta}>{dt(x.text, miss)}</Text>
             </View>))}
           <Text style={st.linkDesc}>{tr('確認日', 'Checked')}: {sc.intlAidCheckedAt ?? tr('不明', 'unknown')} ・ {tr('最新は必ず学校の公式ページで確認してください', 'Always confirm the latest on the official site')}</Text>
-          {!!sc.verifyNote && <Text style={st.linkDesc}>{tr('検証', 'Verification')}: {sc.verifyNote}</Text>}
+          {!!sc.verifyNote && <Text style={st.linkDesc}>{tr('検証', 'Verification')}: {dt(sc.verifyNote, miss)}</Text>}
         </View>
       ) : sc.intlAidNote ? (
         <View style={st.summary}>
           <Text style={st.name}>{sc.intlAidAuto ? tr('留学生向け情報(個別調査前の目安)', 'International-student info (rough estimate, not yet individually researched)') : tr('留学生向け情報(調査メモ)', 'International-student info (research notes)')}</Text>
-          <Text style={st.meta}>{sc.intlAidNote}</Text>
+          <Text style={st.meta}>{dt(sc.intlAidNote, miss)}</Text>
           <Text style={st.linkDesc}>{sc.intlAidAuto ? tr('個別の調査は順次進めています', 'Individual research is ongoing') : `${tr('確認日', 'Checked')}: ${sc.intlAidCheckedAt ?? tr('不明', 'unknown')}`} ・ {tr('最新は必ず学校の公式ページで確認してください', 'Always confirm the latest on the official site')}</Text>
         </View>) : null}
       <Text style={[st.name, { marginTop: 12 }]}>{tr('奨学金ルール', 'Scholarship rules')} ({aidRules[sc.division].title})</Text>
@@ -331,6 +347,7 @@ function Detail({ school: sc, onBack, fav, onFav, showCheer, premium, onPlan }: 
       {!sc.verified && <Text style={st.warn}>{tr('※ データ出典: 米国教育省 EADA 2024-25 / College Scorecard。奨学金・競技は年度で変わるため、出願前に必ず公式サイトで確認してください。', '* Data sources: US Dept. of Education EADA 2024-25 / College Scorecard. Scholarships and sports change yearly; always confirm on the official site before applying.')}</Text>}
     </ScrollView>
   );
+  return body;
 }
 
 function PlanScreen({ premium, onSet, onBack }: { premium: boolean; onSet: (v: boolean) => void; onBack: () => void }) {
