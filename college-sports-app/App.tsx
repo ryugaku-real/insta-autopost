@@ -53,7 +53,7 @@ export default function App() {
   const cheerSelected = sportSel.some((n) => ['Cheerleading', 'Dance', 'STUNT', 'Acrobatics & Tumbling'].includes(n));
   const cmpLimit = premium ? PAID_CMP : FREE_CMP;
   const toggleCmp = (id: string) => {
-    if (!cmp.includes(id) && cmp.length >= cmpLimit) { setLockHint(premium ? tr(`比較は${PAID_CMP}校までです。`, `You can compare up to ${PAID_CMP} schools.`) : tr(`比較は${FREE_CMP}校まで。${FREE_CMP + 1}校以上は有料プランです。`, `Free plan: compare up to ${FREE_CMP} schools. ${FREE_CMP + 1}+ needs the paid plan.`)); return; }
+    if (!cmp.includes(id) && cmp.length >= cmpLimit) { setLockHint(premium ? tr(`比較は${PAID_CMP}校までです。`, `You can compare up to ${PAID_CMP} schools.`) : tr(`比較は${FREE_CMP}校まで。${FREE_CMP + 1}校以上はProプランです。`, `Free plan: compare up to ${FREE_CMP} schools. ${FREE_CMP + 1}+ needs the Pro plan.`)); return; }
     setCmp((c) => (c.includes(id) ? c.filter((x) => x !== id) : [...c, id]));
   };
   // free plan: one value per filter (state / league / sport); premium: several at once
@@ -61,13 +61,13 @@ export default function App() {
     if (list.includes(item)) { setter(list.filter((x) => x !== item)); return; }
     if (premium || list.length === 0) { setter([...list, item]); return; }
     setter([item]);
-    setLockHint(tr('無料プランでは各項目1つまで。2つ以上を同時に選ぶには有料プランです。', 'Free plan: one value per filter. Selecting several at once needs the paid plan.'));
+    setLockHint(tr('無料プランでは各項目1つまで。2つ以上を同時に選ぶにはProプランです。', 'Free plan: one value per filter. Selecting several at once needs the Pro plan.'));
   };
   useEffect(() => { AsyncStorage.getItem('premium').then((v) => { if (v === '1') setPremium(true); }).catch(() => {}); }, []);
   const setPremiumSaved = (v: boolean) => { setPremium(v); AsyncStorage.setItem('premium', v ? '1' : '0').catch(() => {}); };
   useEffect(() => { AsyncStorage.getItem('favs').then((v) => { if (v) setFavs(JSON.parse(v)); }).catch(() => {}); }, []);
   const toggleFav = (id: string) => {
-    if (!favs.includes(id) && !premium && favs.length >= FREE_FAVS) { setLockHint(tr(`お気に入りは無料プランでは${FREE_FAVS}校まで。無制限は有料プランです。`, `Free plan: up to ${FREE_FAVS} favorites. Unlimited needs the paid plan.`)); return; }
+    if (!favs.includes(id) && !premium && favs.length >= FREE_FAVS) { setLockHint(tr(`お気に入りは無料プランでは${FREE_FAVS}校まで。無制限はProプランです。`, `Free plan: up to ${FREE_FAVS} favorites. Unlimited needs the Pro plan.`)); return; }
     toggleFavRaw(id);
   };
   const toggleFavRaw = (id: string) => setFavs((cur) => {
@@ -118,7 +118,7 @@ export default function App() {
       <StatusBar style="auto" />
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
         <Text style={st.title}>{tr('アメリカ大学検索', 'US College Search')}</Text>
-        <View style={{ flexDirection: 'row' }}><Pressable onPress={switchLang}><Text style={[st.link, { marginRight: 14 }]}>{lang === 'ja' ? 'English' : '日本語'}</Text></Pressable><Pressable onPress={() => setShowPlan(true)}><Text style={st.link}>{premium ? tr('👑 有料プラン', '👑 Paid plan') : tr('無料プラン ▸', 'Free plan ▸')}</Text></Pressable></View>
+        <View style={{ flexDirection: 'row' }}><Pressable onPress={switchLang}><Text style={[st.link, { marginRight: 14 }]}>{lang === 'ja' ? 'English' : '日本語'}</Text></Pressable><Pressable onPress={() => setShowPlan(true)}><Text style={st.link}>{premium ? tr('👑 Proプラン', '👑 Pro plan') : tr('無料プラン ▸', 'Free plan ▸')}</Text></Pressable></View>
       </View>
       {lockHint && (
         <Pressable onPress={() => { setLockHint(null); setShowPlan(true); }} style={st.lockBar}>
@@ -284,7 +284,7 @@ function Detail({ school: sc, onBack, fav, onFav, showCheer, premium, onPlan }: 
           </>
         ) : (
           <Pressable onPress={onPlan}>
-            <Text style={st.meta}>{sc.englishReq ? tr(`調査済み(確認日 ${sc.englishCheckedAt ?? '不明'})。🔒 有料プランで、公式サイトを開かなくてもTOEFL・IELTSなどの目安をここで見られます。`, `Researched (checked ${sc.englishCheckedAt ?? 'unknown'}). 🔒 With the paid plan, see TOEFL/IELTS guidance here without opening the school site.`) : tr('🔒 有料プランで、公式サイトを開かなくてもTOEFL・IELTSなどの目安をここで見られます(この学校は未調査)。', '🔒 With the paid plan, see TOEFL/IELTS guidance here (this school is not researched yet).')}</Text>
+            <Text style={st.meta}>{sc.englishReq ? tr(`調査済み(確認日 ${sc.englishCheckedAt ?? '不明'})。🔒 Proプランで、公式サイトを開かなくてもTOEFL・IELTSなどの目安をここで見られます。`, `Researched (checked ${sc.englishCheckedAt ?? 'unknown'}). 🔒 With the Pro plan, see TOEFL/IELTS guidance here without opening the school site.`) : tr('🔒 Proプランで、公式サイトを開かなくてもTOEFL・IELTSなどの目安をここで見られます(この学校は未調査)。', '🔒 With the Pro plan, see TOEFL/IELTS guidance here (this school is not researched yet).')}</Text>
             <Text style={st.link}>{tr('プランを見る ▸', 'See plans ▸')}</Text>
           </Pressable>)}
       </View>
@@ -306,7 +306,7 @@ function Detail({ school: sc, onBack, fav, onFav, showCheer, premium, onPlan }: 
           </>
         ) : (
           <Pressable onPress={onPlan}>
-            <Text style={st.meta}>{tr('チーム情報を調査済みです。🔒 詳細(チームの有無・奨学金の目安など)は有料プランで見られます。', 'Team info researched. 🔒 Details (team availability, aid guidance) are available with the paid plan.')}</Text>
+            <Text style={st.meta}>{tr('チーム情報を調査済みです。🔒 詳細(チームの有無・奨学金の目安など)はProプランで見られます。', 'Team info researched. 🔒 Details (team availability, aid guidance) are available with the Pro plan.')}</Text>
             <Text style={st.link}>{tr('プランを見る ▸', 'See plans ▸')}</Text>
           </Pressable>)}
       </View>)}
@@ -321,7 +321,7 @@ function Detail({ school: sc, onBack, fav, onFav, showCheer, premium, onPlan }: 
       {!premium && (sc.intlAidNote || (sc.scholarshipSections && sc.scholarshipSections.length > 0)) && (
         <Pressable onPress={onPlan} style={st.summary}>
           <Text style={st.name}>{tr('留学生向け奨学金・費用の調査メモ', 'International-student aid & cost research notes')}</Text>
-          <Text style={st.meta}>{tr(`調査済み(確認日 ${sc.intlAidCheckedAt ?? '不明'})。🔒 奨学金の金額・条件・更新などの詳細は有料プランで見られます。`, `Researched (checked ${sc.intlAidCheckedAt ?? 'unknown'}). 🔒 Amounts, conditions and renewal details are available with the paid plan.`)}</Text>
+          <Text style={st.meta}>{tr(`調査済み(確認日 ${sc.intlAidCheckedAt ?? '不明'})。🔒 奨学金の金額・条件・更新などの詳細はProプランで見られます。`, `Researched (checked ${sc.intlAidCheckedAt ?? 'unknown'}). 🔒 Amounts, conditions and renewal details are available with the Pro plan.`)}</Text>
           <Text style={st.link}>{tr('プランを見る ▸', 'See plans ▸')}</Text>
         </Pressable>)}
       {premium && !!noteBox && (
@@ -361,7 +361,7 @@ function Detail({ school: sc, onBack, fav, onFav, showCheer, premium, onPlan }: 
       <LinkRow icon="✈️" label={tr('留学生の出願ページを探す', 'Find international admissions page')} desc={tr('出願方法・必要書類・英語スコアなど留学生向けの案内を検索します', 'Search for how to apply, documents and English score requirements')} url={google(`site:${host(sc.website)} international admissions`)} />
       </>) : (
         <Pressable onPress={onPlan} style={st.summary}>
-          <Text style={st.meta}>{tr('🔒 奨学金ページ・留学生の出願ページへの直リンクは有料プランで開けます。', '🔒 Direct links to the scholarship page and international admissions page are available with the paid plan.')}</Text>
+          <Text style={st.meta}>{tr('🔒 奨学金ページ・留学生の出願ページへの直リンクはProプランで開けます。', '🔒 Direct links to the scholarship page and international admissions page are available with the Pro plan.')}</Text>
           <Text style={st.link}>{tr('プランを見る ▸', 'See plans ▸')}</Text>
         </Pressable>)}
       {!sc.verified && <Text style={st.warn}>{tr('※ データ出典: 米国教育省 EADA 2024-25 / College Scorecard。奨学金・競技は年度で変わるため、出願前に必ず公式サイトで確認してください。', '* Data sources: US Dept. of Education EADA 2024-25 / College Scorecard. Scholarships and sports change yearly; always confirm on the official site before applying.')}</Text>}
@@ -386,7 +386,7 @@ function PlanScreen({ premium, onSet, onBack }: { premium: boolean; onSet: (v: b
       <Pressable onPress={onBack}><Text style={st.link}>{tr('← 戻る', '← Back')}</Text></Pressable>
       <Text style={st.title}>{tr('プラン', 'Plans')}</Text>
       <View style={st.summary}>
-        <Text style={st.name}>{tr('有料プラン 月額 ¥500(仮)', 'Paid plan ¥500/month (provisional)')}</Text>
+        <Text style={st.name}>{tr('Proプラン 月額 ¥500(仮)', 'Pro plan ¥500/month (provisional)')}</Text>
         <Text style={st.meta}>{tr('年額 ¥3,900(仮)・最初の7日間は無料(予定)', '¥3,900/year (provisional) ・ 7-day free trial (planned)')}</Text>
         <Text style={st.linkDesc}>{tr('価格は検討中の仮の金額です。まだ決済はつながっていません。', 'Prices are provisional. Payments are not connected yet.')}</Text>
       </View>
@@ -399,12 +399,12 @@ function PlanScreen({ premium, onSet, onBack }: { premium: boolean; onSet: (v: b
       <View style={[st.cmpRow, { borderBottomWidth: 0 }]}>
         <Text style={[st.linkDesc, { flex: 1 }]}> </Text>
         <Text style={[st.linkDesc, { width: 64, textAlign: 'center' }]}>{tr('無料', 'Free')}</Text>
-        <Text style={[st.linkDesc, { width: 72, textAlign: 'center' }]}>{tr('有料', 'Paid')}</Text>
+        <Text style={[st.linkDesc, { width: 72, textAlign: 'center' }]}>{tr('Pro', 'Pro')}</Text>
       </View>
       <Pressable style={st.cmpBar} onPress={() => onSet(!premium)}>
-        <Text style={st.chipTextOn}>{premium ? tr('無料プランに戻す(試用)', 'Back to free plan (trial switch)') : tr('有料プランを試す(試用スイッチ・無料)', 'Try the paid plan (free trial switch)')}</Text>
+        <Text style={st.chipTextOn}>{premium ? tr('無料プランに戻す(試用)', 'Back to free plan (trial switch)') : tr('Proプランを試す(試用スイッチ・無料)', 'Try the Pro plan (free trial switch)')}</Text>
       </Pressable>
-      <Text style={st.warn}>{tr('※ これは動作確認用の試用スイッチです。正式版では決済後に自動で有料になります。', '* This is a test switch. In the final version the paid plan turns on automatically after payment.')}</Text>
+      <Text style={st.warn}>{tr('※ これは動作確認用の試用スイッチです。正式版では決済後に自動でProになります。', '* This is a test switch. In the final version Pro turns on automatically after payment.')}</Text>
     </ScrollView>
   );
 }
