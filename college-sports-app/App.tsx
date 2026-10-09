@@ -284,7 +284,7 @@ function Detail({ school: sc, onBack, fav, onFav, showCheer, premium, onPlan }: 
           </>
         ) : (
           <Pressable onPress={onPlan}>
-            <Text style={st.meta}>{tr('🔒 有料プランで、公式サイトを開かなくてもTOEFL・IELTSなどの目安をここで見られます。', '🔒 With the paid plan, see TOEFL/IELTS guidance here without opening the school site.')}</Text>
+            <Text style={st.meta}>{sc.englishReq ? tr(`調査済み(確認日 ${sc.englishCheckedAt ?? '不明'})。🔒 有料プランで、公式サイトを開かなくてもTOEFL・IELTSなどの目安をここで見られます。`, `Researched (checked ${sc.englishCheckedAt ?? 'unknown'}). 🔒 With the paid plan, see TOEFL/IELTS guidance here without opening the school site.`) : tr('🔒 有料プランで、公式サイトを開かなくてもTOEFL・IELTSなどの目安をここで見られます(この学校は未調査)。', '🔒 With the paid plan, see TOEFL/IELTS guidance here (this school is not researched yet).')}</Text>
             <Text style={st.link}>{tr('プランを見る ▸', 'See plans ▸')}</Text>
           </Pressable>)}
       </View>
@@ -299,24 +299,38 @@ function Detail({ school: sc, onBack, fav, onFav, showCheer, premium, onPlan }: 
       {showCheer && (
       <View style={st.summary}>
         <Text style={st.name}>{tr('チア・ダンス・スタント', 'Cheer / Dance / Stunt')}</Text>
-        <Text style={st.meta}>{sc.cheerNote ? dt(sc.cheerNote, miss) : tr('チーム情報なし(未確認)', 'No team info (unconfirmed)')}</Text>
-        {!!sc.cheerNote && getLang() === 'ja' && <Text style={st.linkDesc}>{CHEER_AID_NOTE}</Text>}
+        {!sc.cheerNote ? <Text style={st.meta}>{tr('チーム情報なし(未確認)', 'No team info (unconfirmed)')}</Text> : premium ? (
+          <>
+            <Text style={st.meta}>{dt(sc.cheerNote, miss)}</Text>
+            {getLang() === 'ja' && <Text style={st.linkDesc}>{CHEER_AID_NOTE}</Text>}
+          </>
+        ) : (
+          <Pressable onPress={onPlan}>
+            <Text style={st.meta}>{tr('チーム情報を調査済みです。🔒 詳細(チームの有無・奨学金の目安など)は有料プランで見られます。', 'Team info researched. 🔒 Details (team availability, aid guidance) are available with the paid plan.')}</Text>
+            <Text style={st.link}>{tr('プランを見る ▸', 'See plans ▸')}</Text>
+          </Pressable>)}
       </View>)}
       <Text style={st.meta}>{tr('平均ネットプライス(奨学金差引後・米国学生)', 'Average net price (after grants, US students)')}: {money(sc.avgNetPrice ?? null)}{tr('/年', '/yr')}</Text>
       {sc.tuitionLines && sc.tuitionLines.length > 0 && (
         <View style={st.summary}>
           <Text style={st.name}>{tr('学費・費用(留学生の目安)', 'Costs (guide for international students)')}</Text>
           {sc.tuitionLines.map((t) => <Text key={t} style={st.meta}>・{dt(t, miss)}</Text>)}
-          {!!sc.tuitionResearch && !noteBox && <Text style={[st.meta, { marginTop: 6 }]}>{dt(sc.tuitionResearch, miss)}</Text>}
+          {premium && !!sc.tuitionResearch && !noteBox && <Text style={[st.meta, { marginTop: 6 }]}>{dt(sc.tuitionResearch, miss)}</Text>}
           <Text style={st.linkDesc}>{tr('数値は米国教育省(College Scorecard)ベースの概算と個別調査メモです。最新は学校の公式ページで確認してください。', 'Figures are estimates based on US Dept. of Education (College Scorecard) data plus per-school research notes. Confirm the latest on the official site.')}</Text>
         </View>)}
-      {!!noteBox && (
+      {!premium && (sc.intlAidNote || (sc.scholarshipSections && sc.scholarshipSections.length > 0)) && (
+        <Pressable onPress={onPlan} style={st.summary}>
+          <Text style={st.name}>{tr('留学生向け奨学金・費用の調査メモ', 'International-student aid & cost research notes')}</Text>
+          <Text style={st.meta}>{tr(`調査済み(確認日 ${sc.intlAidCheckedAt ?? '不明'})。🔒 奨学金の金額・条件・更新などの詳細は有料プランで見られます。`, `Researched (checked ${sc.intlAidCheckedAt ?? 'unknown'}). 🔒 Amounts, conditions and renewal details are available with the paid plan.`)}</Text>
+          <Text style={st.link}>{tr('プランを見る ▸', 'See plans ▸')}</Text>
+        </Pressable>)}
+      {premium && !!noteBox && (
         <View style={st.summary}>
           <Text style={st.name}>International-student research notes</Text>
           <Text style={st.meta}>{noteBox}</Text>
           <Text style={st.linkDesc}>Checked: {sc.intlAidCheckedAt ?? 'unknown'} ・ Always confirm the latest on the official site</Text>
         </View>)}
-      {sc.scholarshipSections && sc.scholarshipSections.length > 0 ? (
+      {!premium ? null : sc.scholarshipSections && sc.scholarshipSections.length > 0 ? (
         <View style={st.summary}>
           <Text style={st.name}>{tr('奨学金制度', 'Scholarships')}</Text>
           {sc.scholarshipSections.filter((x) => !noteBox || engData(x.text) != null).map((x) => (
@@ -342,8 +356,14 @@ function Detail({ school: sc, onBack, fav, onFav, showCheer, premium, onPlan }: 
       {sc.lat != null && sc.lng != null && <LinkRow icon="🗺️" label={tr('地図で見る(Googleマップ)', 'View on map (Google Maps)')} desc={tr(`${sc.city}, ${sc.state} の場所を開きます`, `Open ${sc.city}, ${sc.state}`)} url={`https://www.google.com/maps/search/?api=1&query=${sc.lat},${sc.lng}`} />}
       <LinkRow icon="🏫" label={tr('学校の公式サイト', 'Official school website')} desc={tr('学部・学費・キャンパスなど学校全体の情報', 'Programs, tuition, campus and general info')} url={sc.website} />
       <LinkRow icon="🏅" label={tr('運動部(アスレチックス)サイト', 'Athletics website')} desc={sc.athleticsUrl ? tr('チームのスケジュール・コーチ・選手募集の連絡先', 'Schedules, coaches and recruiting contacts') : tr('運動部の公式サイトをGoogleで探します', 'Search Google for the athletics site')} url={sc.athleticsUrl ?? google(`${sc.name} athletics official site`)} />
+      {premium ? (<>
       <LinkRow icon="💰" label={sc.scholarshipUrl ? tr('スカラーシップ(奨学金)ページ', 'Scholarship page') : tr('スカラーシップ(奨学金)を探す', 'Find scholarships')} desc={sc.scholarshipUrl ? tr('運動奨学金・留学生向け奨学金の案内ページ', 'Athletic and international scholarship info') : tr('この学校のサイト内から、運動奨学金・留学生向け奨学金のページを検索します', 'Search this school\'s site for athletic / international scholarships')} url={sc.scholarshipUrl ?? google(`site:${host(sc.website)} athletic scholarship international student`)} />
       <LinkRow icon="✈️" label={tr('留学生の出願ページを探す', 'Find international admissions page')} desc={tr('出願方法・必要書類・英語スコアなど留学生向けの案内を検索します', 'Search for how to apply, documents and English score requirements')} url={google(`site:${host(sc.website)} international admissions`)} />
+      </>) : (
+        <Pressable onPress={onPlan} style={st.summary}>
+          <Text style={st.meta}>{tr('🔒 奨学金ページ・留学生の出願ページへの直リンクは有料プランで開けます。', '🔒 Direct links to the scholarship page and international admissions page are available with the paid plan.')}</Text>
+          <Text style={st.link}>{tr('プランを見る ▸', 'See plans ▸')}</Text>
+        </Pressable>)}
       {!sc.verified && <Text style={st.warn}>{tr('※ データ出典: 米国教育省 EADA 2024-25 / College Scorecard。奨学金・競技は年度で変わるため、出願前に必ず公式サイトで確認してください。', '* Data sources: US Dept. of Education EADA 2024-25 / College Scorecard. Scholarships and sports change yearly; always confirm on the official site before applying.')}</Text>}
     </ScrollView>
   );
@@ -357,6 +377,9 @@ function PlanScreen({ premium, onSet, onBack }: { premium: boolean; onSet: (v: b
     [tr('お気に入り', 'Favorites'), tr(`${FREE_FAVS}校`, `${FREE_FAVS}`), tr('無制限', 'Unlimited')],
     [tr('学校の比較', 'Compare schools'), tr(`${FREE_CMP}校`, `${FREE_CMP}`), tr(`${PAID_CMP}校`, `${PAID_CMP}`)],
     [tr('英語スコア(TOEFL等)の目安をアプリ内で表示', 'English test scores (TOEFL etc.) shown in-app'), '—', '○'],
+    [tr('留学生向け奨学金の詳細(金額・条件・更新)', 'International aid details (amounts, conditions, renewal)'), tr('有無のみ', 'Yes/no'), '○'],
+    [tr('チア・ダンス・スタントの詳細', 'Cheer / dance / stunt details'), tr('有無のみ', 'Yes/no'), '○'],
+    [tr('奨学金・出願ページへの直リンク', 'Direct links to scholarship & admissions pages'), '—', '○'],
   ];
   return (
     <ScrollView style={st.root} contentContainerStyle={{ paddingBottom: 48 }}>
