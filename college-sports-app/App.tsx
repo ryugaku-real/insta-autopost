@@ -61,13 +61,13 @@ export default function App() {
     if (list.includes(item)) { setter(list.filter((x) => x !== item)); return; }
     if (premium || list.length === 0) { setter([...list, item]); return; }
     setter([item]);
-    setLockHint(tr('無料プランでは各項目1つまで。2つ以上を同時に選ぶにはProプランです。', 'Free plan: one value per filter. Selecting several at once needs the Pro plan.'));
+    setLockHint(tr('Freeプランでは各項目1つまで。2つ以上を同時に選ぶにはProプランです。', 'Free plan: one value per filter. Selecting several at once needs the Pro plan.'));
   };
   useEffect(() => { AsyncStorage.getItem('premium').then((v) => { if (v === '1') setPremium(true); }).catch(() => {}); }, []);
   const setPremiumSaved = (v: boolean) => { setPremium(v); AsyncStorage.setItem('premium', v ? '1' : '0').catch(() => {}); };
   useEffect(() => { AsyncStorage.getItem('favs').then((v) => { if (v) setFavs(JSON.parse(v)); }).catch(() => {}); }, []);
   const toggleFav = (id: string) => {
-    if (!favs.includes(id) && !premium && favs.length >= FREE_FAVS) { setLockHint(tr(`お気に入りは無料プランでは${FREE_FAVS}校まで。無制限はProプランです。`, `Free plan: up to ${FREE_FAVS} favorites. Unlimited needs the Pro plan.`)); return; }
+    if (!favs.includes(id) && !premium && favs.length >= FREE_FAVS) { setLockHint(tr(`お気に入りはFreeプランでは${FREE_FAVS}校まで。無制限はProプランです。`, `Free plan: up to ${FREE_FAVS} favorites. Unlimited needs the Pro plan.`)); return; }
     toggleFavRaw(id);
   };
   const toggleFavRaw = (id: string) => setFavs((cur) => {
@@ -118,7 +118,7 @@ export default function App() {
       <StatusBar style="auto" />
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
         <Text style={st.title}>{tr('アメリカ大学検索', 'US College Search')}</Text>
-        <View style={{ flexDirection: 'row' }}><Pressable onPress={switchLang}><Text style={[st.link, { marginRight: 14 }]}>{lang === 'ja' ? 'English' : '日本語'}</Text></Pressable><Pressable onPress={() => setShowPlan(true)}><Text style={st.link}>{premium ? tr('👑 Proプラン', '👑 Pro plan') : tr('無料プラン ▸', 'Free plan ▸')}</Text></Pressable></View>
+        <View style={{ flexDirection: 'row' }}><Pressable onPress={switchLang}><Text style={[st.link, { marginRight: 14 }]}>{lang === 'ja' ? 'English' : '日本語'}</Text></Pressable><Pressable onPress={() => setShowPlan(true)}><Text style={st.link}>{premium ? tr('👑 Proプラン', '👑 Pro plan') : tr('Freeプラン ▸', 'Free plan ▸')}</Text></Pressable></View>
       </View>
       {lockHint && (
         <Pressable onPress={() => { setLockHint(null); setShowPlan(true); }} style={st.lockBar}>
@@ -153,7 +153,7 @@ export default function App() {
       </View>
       <Modal visible={picker !== null} animationType="slide" onRequestClose={() => setPicker(null)}>
         <View style={st.root}>
-          <Text style={st.title}>{(picker === 'state' ? tr('州を選ぶ', 'Choose a state') : picker === 'sport' ? tr('競技を選ぶ', 'Choose a sport') : tr('リーグを選ぶ', 'Choose a conference')) + (premium ? tr('(複数可)', ' (multiple OK)') : tr('(無料プランは1つ)', ' (free plan: one)'))}</Text>
+          <Text style={st.title}>{(picker === 'state' ? tr('州を選ぶ', 'Choose a state') : picker === 'sport' ? tr('競技を選ぶ', 'Choose a sport') : tr('リーグを選ぶ', 'Choose a conference')) + (premium ? tr('(複数可)', ' (multiple OK)') : tr('(Freeプランは1つ)', ' (free plan: one)'))}</Text>
           {picker === 'conf' && <Text style={st.sub}>{tr('※ リーグ名はNCAA加盟校のみ。', '* Conferences are listed for NCAA schools only. ')}{divisions.length === 0 ? '' : tr(`${divisions.join('・')}のリーグを表示中。`, `Showing ${divisions.join(', ')} conferences.`)}</Text>}
           <FlatList
             data={picker === 'state' ? states : picker === 'sport' ? sportList.map((x) => x.name) : conferences}
@@ -402,7 +402,7 @@ function PlanScreen({ premium, onSet, onBack }: { premium: boolean; onSet: (v: b
         <Text style={[st.linkDesc, { width: 72, textAlign: 'center' }]}>{tr('Pro', 'Pro')}</Text>
       </View>
       <Pressable style={st.cmpBar} onPress={() => onSet(!premium)}>
-        <Text style={st.chipTextOn}>{premium ? tr('無料プランに戻す(試用)', 'Back to free plan (trial switch)') : tr('Proプランを試す(試用スイッチ・無料)', 'Try the Pro plan (free trial switch)')}</Text>
+        <Text style={st.chipTextOn}>{premium ? tr('Freeプランに戻す(試用)', 'Back to free plan (trial switch)') : tr('Proプランを試す(試用スイッチ・無料)', 'Try the Pro plan (free trial switch)')}</Text>
       </Pressable>
       <Text style={st.warn}>{tr('※ これは動作確認用の試用スイッチです。正式版では決済後に自動でProになります。', '* This is a test switch. In the final version Pro turns on automatically after payment.')}</Text>
     </ScrollView>
