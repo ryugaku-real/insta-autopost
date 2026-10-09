@@ -1,3 +1,4 @@
+import REQ_EN from './data/engReqEn.json';
 import { getLang } from './i18n';
 
 // Translates the researched English-requirement notes (written in Japanese) into English by phrase.
@@ -36,12 +37,35 @@ const PHRASES: [string, string][] = [
   ['学部', 'undergrad'], ['英語', 'English'], ['英検', 'Eiken'], ['級', ' grade'], ['超', ' over'], ['紙', 'paper '], ['各', 'each '], ['旧', 'old '], ['または', ' or '], ['公式', 'official'],
   ['正規', 'regular'], ['年次', 'year'], ['必須', 'required'], ['経由', 'via'], ['あり', 'available'], ['とも', 'both'], ['基準', 'standard'], ['最低', 'minimum'], ['記載なし', 'not stated'], ['は記載なし', ' not stated'],
   ['不要', 'not required'], ['文理', 'liberal arts'], ['可', ' OK'], ['同', 'same'], ['は', ': '],
+
+  ['第三者情報で', 'third-party sources say '], ['第三者では', 'third-party sources: '], ['第三者で', 'third-party sources: '], ['別情報で', 'other sources say '], ['の基準は未確認', ' standard not confirmed'], ['最低点は未公表', 'minimum score not published'], ['最低点は取得できず', 'minimum score could not be found'],
+  ['公式の最低点は未確認', 'official minimum score not confirmed'], ['公式の最低点は未公表', 'official minimum score not published'], ['最低点は公式に明記なし', 'minimum score not stated officially'], ['最低点は明記なし', 'minimum score not stated'], ['英語最低点は公式未確認', 'English minimum not confirmed officially'],
+  ['英語要件の公式情報が見つからず', 'no official English requirement info found'], ['英語要件の公式情報なし', 'no official English requirement info'], ['英語要件の情報が見つからず', 'no English requirement info found'], ['公式ページに英語最低点の記載なし', 'official page states no English minimum'],
+  ['の記載なし', ' not stated'], ['の記載あり', ' mentioned'], ['の記載もあり要確認', ' also mentioned, verify'], ['の記載もあり', ' also mentioned'], ['の記載のみ', ' mentioned only'], ['の記載', ' mention'], ['任意の記載もあり', 'also described as optional'], ['任意の記載', 'described as optional'],
+  ['公式チェックリスト', 'official checklist'], ['公式カタログ', 'official catalog'], ['公式出願書', 'official application form'], ['公式パケット', 'official packet'], ['公式ページ', 'official page'], ['公式で未確認', 'not confirmed officially'], ['公式未確認', 'not confirmed officially'], ['公式・古い可能性', 'official, may be outdated'], ['古い可能性', 'may be outdated'],
+  ['入学事務局に要確認', 'check with the admissions office'], ['個別校の公式確認は未了', 'individual school not yet confirmed officially'], ['共通方針で', 'system-wide policy: '], ['共通の目安', 'system-wide guideline'], ['共通方針', 'system-wide policy'], ['共通', 'common'],
+  ['年以内のスコア', '-year-old scores or newer'], ['年以内', ' years or less'], ['年有効', '-year validity'], ['年未満の場合', 'if less than '], ['を受付', ' accepted'], ['のみ受付', ' only accepted'], ['提出が必要', 'submission required'], ['提出必須', 'submission required'], ['提出', 'submit'],
+  ['入学に不要', 'not required for admission'], ['は入学に不要', ': not required for admission'], ['英語テストは任意', 'English test optional'], ['最低点なし', 'no minimum score'], ['直接入学', 'direct admission'], ['通常入学', 'regular admission'], ['条件付き', 'conditional '],
+  ['米高校卒は免除可', 'waived for US high school graduates'], ['以上で免除', ' or higher: waived'], ['等で免除可', ' etc.: may be waived'], ['免除', 'waiver'], ['修了でも可', ' completion also accepted'], ['修了等でも可', ' completion etc. also accepted'], ['修了', 'completion'],
+  ['米大学の英作文', 'US college English composition'], ['英語での就学', 'schooling in English'], ['非英語母語者は', 'non-native speakers: '], ['非英語圏出身者は', 'applicants from non-English-speaking countries: '], ['が必須', ' required'], ['配置テスト', 'placement test'], ['競争的な目安', 'competitive guideline'],
+  ['とは別校', ': a different school'], ['看護は', 'nursing: '], ['旧カタログで', 'old catalog: '], ['換算は約', 'converts to about '], ['以上推奨', '+ recommended'], ['以上でも可', '+ also accepted'], ['集中英語プログラムあり', 'intensive English program available'], ['集中英語', 'intensive English'], ['州コミュニティカレッジ', 'state community college'], ['州の', 'state '],
+  ['受入', 'admission'], ['情報源が一般的で要確認', 'general source, verify'], ['公式の最低基準', 'official minimum standard'], ['英語能力の証明は必須だが最低点は公式未確認', 'English proof required but minimum not confirmed officially'], ['不可', 'not accepted'], ['相当', ' equivalent'], ['なし', 'none'], ['のみ', ' only'], ['等', ' etc.'], ['月', ' month'],
 ];
 
 const PUNCT: [RegExp, string][] = [[/\u3002/g, '. '], [/\u3001/g, ', '], [/\uFF08/g, ' ('], [/\uFF09/g, ') '], [/\u30FB/g, ' / '], [/\u300C|\u300D/g, '"'], [/\u301C|\uFF5E/g, '–'], [/\uFF1A/g, ': '], [/undergrad\s*:/g, 'Undergrad:']];
 
+export function engPartial(t: string): string {
+  let s = t.replace(/(\d{4})年(\d{1,2})月(\d{1,2})日/g, (_m, y, mo, d) => `${MONTHS[+mo]} ${d}, ${y}`).replace(/(\d{4})年(\d{1,2})月/g, (_m, y, mo) => `${MONTHS[+mo]} ${y}`);
+  const sorted = [...PHRASES].sort((a, b) => b[0].length - a[0].length);
+  for (const [ja, en] of sorted) s = s.split(ja).join(en);
+  for (const [re, r] of PUNCT) s = s.replace(re, r);
+  return s;
+}
+
 export function engText(t: string): string {
   if (getLang() !== 'en') return t;
+  const hit = (REQ_EN as Record<string, string>)[t];
+  if (hit) return hit;
   let s = t.replace(/(\d{4})年(\d{1,2})月(\d{1,2})日/g, (_m, y, mo, d) => `${MONTHS[+mo]} ${d}, ${y}`).replace(/(\d{4})年(\d{1,2})月/g, (_m, y, mo) => `${MONTHS[+mo]} ${y}`);
   const sorted = [...PHRASES].sort((a, b) => b[0].length - a[0].length);
   for (const [ja, en] of sorted) s = s.split(ja).join(en);
