@@ -1,0 +1,41 @@
+{
+  "draft": false,
+  "publish_at": "2026-10-18 07:00+09:00",
+  "story": false,
+  "caption": "ルームメイトと話すときの英語フレーズ🏠\nお願いや相談も、言い方ひとつで関係がぐっとラクになります。保存してね！\n.\n.\n#英会話 #英語フレーズ #英語学習 #アメリカ留学 #留学準備 #留学生 #海外留学 #日常英会話 #英語勉強 #留学生活",
+  "slides": [
+    {
+      "type": "cover",
+      "label": "保存推奨",
+      "title": "ルームメイトと\n使える\n英語フレーズ",
+      "sub": "寮生活を気持ちよく"
+    },
+    {
+      "type": "phrase",
+      "en": "Do you mind if I turn on the light?",
+      "ja": "電気をつけてもいい？",
+      "note": "相手が休んでいそうなとき"
+    },
+    {
+      "type": "phrase",
+      "en": "Can we talk about the cleaning schedule?",
+      "ja": "掃除の分担について話せる？",
+      "note": "ルールを決めたいとき"
+    },
+    {
+      "type": "phrase",
+      "en": "I'm having friends over tonight. Is that okay?",
+      "ja": "今夜友だちを呼んでもいい？",
+      "note": "部屋に人を呼ぶ前に"
+    },
+    {
+      "type": "phrase",
+      "en": "Thanks for understanding.",
+      "ja": "わかってくれてありがとう",
+      "note": "相談のあとにひとこと"
+    },
+    {
+      "type": "cta"
+    }
+  ]
+}

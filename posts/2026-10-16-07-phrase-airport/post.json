@@ -1,0 +1,41 @@
+{
+  "draft": false,
+  "publish_at": "2026-10-16 07:00+09:00",
+  "story": false,
+  "caption": "空港で使える英語フレーズ✈️\n入国審査から荷物トラブルまで。渡米の日に焦らないように保存しておこう！\n.\n.\n#英会話 #英語フレーズ #英語学習 #アメリカ留学 #留学準備 #留学生 #海外留学 #日常英会話 #英語勉強 #留学生活",
+  "slides": [
+    {
+      "type": "cover",
+      "label": "保存推奨",
+      "title": "空港で\n使える\n英語フレーズ",
+      "sub": "入国から荷物まで"
+    },
+    {
+      "type": "phrase",
+      "en": "I'm here to study.",
+      "ja": "勉強のために来ました",
+      "note": "入国審査で目的を聞かれたとき"
+    },
+    {
+      "type": "phrase",
+      "en": "Where is the baggage claim?",
+      "ja": "荷物受取所はどこですか？",
+      "note": "飛行機を降りたあと"
+    },
+    {
+      "type": "phrase",
+      "en": "My bag didn't come out.",
+      "ja": "荷物が出てきませんでした",
+      "note": "預けた荷物が見つからないとき"
+    },
+    {
+      "type": "phrase",
+      "en": "How do I get to downtown?",
+      "ja": "ダウンタウンへはどう行けばいいですか？",
+      "note": "空港から移動するとき"
+    },
+    {
+      "type": "cta"
+    }
+  ]
+}

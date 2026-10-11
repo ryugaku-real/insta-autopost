@@ -1,0 +1,41 @@
+{
+  "draft": false,
+  "publish_at": "2026-10-19 07:00+09:00",
+  "story": false,
+  "caption": "グループワークで使える英語フレーズ👥\nアメリカの授業はグループ課題が多め。意見を言う・分担する、の2つができれば大丈夫！\n.\n.\n#英会話 #英語フレーズ #英語学習 #アメリカ留学 #留学準備 #留学生 #海外留学 #日常英会話 #英語勉強 #留学生活",
+  "slides": [
+    {
+      "type": "cover",
+      "label": "保存推奨",
+      "title": "グループワークで\n使える\n英語フレーズ",
+      "sub": "授業で発言しよう"
+    },
+    {
+      "type": "phrase",
+      "en": "I have an idea.",
+      "ja": "1つアイデアがあります",
+      "note": "意見を言いはじめるとき"
+    },
+    {
+      "type": "phrase",
+      "en": "I agree with you, but...",
+      "ja": "賛成だけど…",
+      "note": "やわらかく別の意見を言うとき"
+    },
+    {
+      "type": "phrase",
+      "en": "Who wants to do this part?",
+      "ja": "この部分は誰がやる？",
+      "note": "作業を分担するとき"
+    },
+    {
+      "type": "phrase",
+      "en": "Let's meet again on Friday.",
+      "ja": "金曜にまた集まろう",
+      "note": "次の予定を決めるとき"
+    },
+    {
+      "type": "cta"
+    }
+  ]
+}

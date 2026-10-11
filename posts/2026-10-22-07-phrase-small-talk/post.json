@@ -1,0 +1,41 @@
+{
+  "draft": false,
+  "publish_at": "2026-10-22 07:00+09:00",
+  "story": false,
+  "caption": "アメリカでよくある「スモールトーク」の英語フレーズ💬\nレジやエレベーターでの何気ない会話。返し方を知っておくとラクになります！\n.\n.\n#英会話 #英語フレーズ #英語学習 #アメリカ留学 #留学準備 #留学生 #海外留学 #日常英会話 #英語勉強 #留学生活",
+  "slides": [
+    {
+      "type": "cover",
+      "label": "保存推奨",
+      "title": "スモールトークで\n使える\n英語フレーズ",
+      "sub": "気軽な会話に慣れよう"
+    },
+    {
+      "type": "phrase",
+      "en": "How's it going?",
+      "ja": "調子どう？",
+      "note": "あいさつ代わりに"
+    },
+    {
+      "type": "phrase",
+      "en": "Pretty good, how about you?",
+      "ja": "いい感じだよ、そっちは？",
+      "note": "聞かれたときの返し"
+    },
+    {
+      "type": "phrase",
+      "en": "Any plans for the weekend?",
+      "ja": "週末なにか予定ある？",
+      "note": "会話を広げたいとき"
+    },
+    {
+      "type": "phrase",
+      "en": "Have a good one!",
+      "ja": "よい一日を！",
+      "note": "別れぎわに"
+    },
+    {
+      "type": "cta"
+    }
+  ]
+}
