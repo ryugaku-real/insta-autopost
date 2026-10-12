@@ -64,6 +64,19 @@ jobs:
           else
             python scripts/ig.py publish
           fi
+      - name: YouTubeショートに公開（リポジトリ変数 YOUTUBE_ENABLED=1 のときだけ）
+        if: ${{ vars.YOUTUBE_ENABLED == '1' }}
+        env:
+          YT_CLIENT_ID: ${{ secrets.YT_CLIENT_ID }}
+          YT_CLIENT_SECRET: ${{ secrets.YT_CLIENT_SECRET }}
+          YT_REFRESH_TOKEN: ${{ secrets.YT_REFRESH_TOKEN }}
+          YT_PRIVACY: ${{ vars.YT_PRIVACY }}
+        run: |
+          if [ "${{ inputs.dry_run }}" = "true" ]; then
+            python scripts/youtube.py publish --dry-run
+          else
+            python scripts/youtube.py publish
+          fi
       - name: 公開記録を保存
         if: always()
         run: |
