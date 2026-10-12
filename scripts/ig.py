@@ -43,6 +43,8 @@ LATE_LIMIT = dt.timedelta(hours=float(os.environ.get("LATE_LIMIT_HOURS", "24")))
 JST = ZoneInfo("Asia/Tokyo")
 # この時間（日本時間）の投稿は、ストーリーズにも自動でシェアする（post.json の "story": true/false で個別に変更可）
 STORY_HOURS = {int(h) for h in os.environ.get("STORY_HOURS_JST", "18").split(",") if h.strip()}
+# リール自動投稿は初期状態でオフ。REELS_ENABLED=1 にするか、post.json に "reel": true を書いた投稿だけ出す
+REELS_ENABLED = os.environ.get("REELS_ENABLED", "").strip().lower() in ("1", "true", "yes")
 
 MAX_CAPTION = 2200
 MAX_HASHTAGS = 30
@@ -245,6 +247,45 @@ def publish_story(ig_id: str, p: dict) -> str:
     return api("POST", f"{ig_id}/media_publish", {"creation_id": c["id"]})["id"]
 
 
+def wants_reel(p: dict) -> bool:
+    if not (p["_dir"] / "reel.mp4").exists():
+        return False
+    return bool(p["reel"]) if "reel" in p else REELS_ENABLED
+
+
+def publish_reel(ig_id: str, p: dict) -> str:
+    # フィードにはカルーセルが出ているので、リールはリールタブだけに出す（share_to_feed=false）
+    c = api("POST", f"{ig_id}/media", {"media_type": "REELS", "video_url": image_url(p, "reel.mp4"),
+                                       "caption": p.get("caption", ""), "share_to_feed": "false"})
+    wait_ready(c["id"], timeout_s=600)
+    return api("POST", f"{ig_id}/media_publish", {"creation_id": c["id"]})["id"]
+
+
+def reels_pass(ig_id: str, posts: list[dict], state: dict, now, dry_run: bool) -> int:
+    """公開済みの投稿のうち、リールにもする分を出す（失敗したら次の回に再挑戦、最大3回）"""
+    failures = 0
+    for p in posts:
+        info = state.get(p["_key"])
+        if not info or info.get("reel_id") or info.get("reel_tries", 0) >= 3 or not wants_reel(p):
+            continue
+        if now - parse_time(p["publish_at"]) > dt.timedelta(hours=12):
+            continue
+        print(f"[リール] {p['_key']}")
+        if dry_run:
+            print("  （テスト実行なので投稿しません）")
+            continue
+        try:
+            info["reel_id"] = publish_reel(ig_id, p)
+            print("  完了")
+        except ApiError as e:
+            info["reel_tries"] = info.get("reel_tries", 0) + 1
+            print(f"  失敗（{info['reel_tries']}回目）: {e}")
+            if info["reel_tries"] >= 3:
+                failures += 1
+        save_state(state)
+    return failures
+
+
 def stories_pass(ig_id: str, posts: list[dict], state: dict, now, dry_run: bool) -> int:
     """公開済みの投稿のうち、ストーリーズにシェアする分を出す（失敗したら次の回に再挑戦、最大3回）"""
     failures = 0
@@ -329,6 +370,7 @@ def cmd_publish(args) -> int:
             print(f"  失敗: {e}")
             failures += 1
     failures += stories_pass(ig_id, load_posts(), state, now, args.dry_run)
+    failures += reels_pass(ig_id, load_posts(), state, now, args.dry_run)
     return 1 if failures else 0
 
 
