@@ -105,3 +105,22 @@ tools/make_posts.py     ← 投稿データ（post.json）をまとめて作る�
 - **公開リポジトリなので**、予約中の画像と文章は誰でも見られる状態です（公開前のネタバレが気になる場合は相談してください）
 - **60日間何も更新がないと**、GitHub が自動実行を止めます。毎週投稿を足していれば大丈夫です
 - **PR表記**：アフィリエイトやPR案件の投稿は、キャプションの最初に「PR」「広告」などを入れる（日本のステマ規制）
+
+---
+
+## リール・YouTubeショートの自動投稿（任意）
+
+### リール
+リポジトリの Settings → Secrets and variables → Actions → **Variables** に `REELS_ENABLED` = `1` を追加すると、
+スライド画像から動画（`reel.mp4`）を自動で作り、カルーセルの後にリールとしても投稿します。
+1投稿だけ試すときは `post.json` に `"reel": true` を書きます。
+
+### YouTubeショート
+1. Google Cloud で新規プロジェクト → 「YouTube Data API v3」を有効化 → OAuth同意画面（外部・テスト）に自分のGoogleアカウントをテストユーザー追加
+2. 認証情報 →「OAuthクライアントID」→ 種類「デスクトップアプリ」→ クライアントIDとシークレットを控える
+3. 自分のPCで `python scripts/youtube.py auth` を実行して許可 → リフレッシュトークンを控える
+4. GitHub の Secrets に `YT_CLIENT_ID` `YT_CLIENT_SECRET` `YT_REFRESH_TOKEN` を追加
+5. Actions で `python scripts/youtube.py check` 相当の確認（接続OKと出ればよい）
+6. Variables に `YOUTUBE_ENABLED` = `1` を追加（公開設定は `YT_PRIVACY`、既定は private）
+
+未審査のGoogle Cloudプロジェクトからの動画は、公開設定にしても非公開に固定されます。

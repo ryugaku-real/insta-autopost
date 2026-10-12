@@ -40,8 +40,21 @@ jobs:
             git pull --rebase --autostash
             git push
           fi
+      - name: リール動画を作る（リポジトリ変数 REELS_ENABLED=1 のときだけ）
+        if: ${{ vars.REELS_ENABLED == '1' }}
+        run: |
+          python scripts/video.py make
+          if [ -n "$(git status --porcelain --untracked-files=all posts)" ]; then
+            git config user.name "insta-autopost"
+            git config user.email "actions@users.noreply.github.com"
+            git add posts
+            git commit -m "リール動画を作成"
+            git pull --rebase --autostash
+            git push
+          fi
       - name: 予約時刻を過ぎた投稿を公開
         env:
+          REELS_ENABLED: ${{ vars.REELS_ENABLED }}
           IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
           IG_USER_ID: ${{ secrets.IG_USER_ID }}
         run: |
@@ -50,6 +63,19 @@ jobs:
             python scripts/ig.py publish --dry-run
           else
             python scripts/ig.py publish
+          fi
+      - name: YouTubeショートに公開（リポジトリ変数 YOUTUBE_ENABLED=1 のときだけ）
+        if: ${{ vars.YOUTUBE_ENABLED == '1' }}
+        env:
+          YT_CLIENT_ID: ${{ secrets.YT_CLIENT_ID }}
+          YT_CLIENT_SECRET: ${{ secrets.YT_CLIENT_SECRET }}
+          YT_REFRESH_TOKEN: ${{ secrets.YT_REFRESH_TOKEN }}
+          YT_PRIVACY: ${{ vars.YT_PRIVACY }}
+        run: |
+          if [ "${{ inputs.dry_run }}" = "true" ]; then
+            python scripts/youtube.py publish --dry-run
+          else
+            python scripts/youtube.py publish
           fi
       - name: 公開記録を保存
         if: always()
