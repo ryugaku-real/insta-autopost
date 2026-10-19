@@ -1,0 +1,41 @@
+{
+  "draft": false,
+  "publish_at": "2026-10-27 07:00+09:00",
+  "caption": "会話がはずむ「ほめる」英語フレーズ😊\nアメリカでは気軽にほめ合う文化があります。返し方もセットで覚えよう！\n.\n.\n#英会話 #英語フレーズ #英語学習 #アメリカ留学 #留学準備 #留学生 #海外留学 #日常英会話 #英語勉強 #留学生活",
+  "slides": [
+    {
+      "type": "cover",
+      "label": "保存推奨",
+      "title": "会話がはずむ\nほめる\n英語フレーズ",
+      "sub": "返し方もセットで"
+    },
+    {
+      "type": "phrase",
+      "en": "I like your shoes!",
+      "ja": "その靴いいね！",
+      "note": "持ち物をほめるとき"
+    },
+    {
+      "type": "phrase",
+      "en": "You did a great job.",
+      "ja": "よくがんばったね",
+      "note": "発表や作業のあとに"
+    },
+    {
+      "type": "phrase",
+      "en": "That's so cool!",
+      "ja": "それすごくいいね！",
+      "note": "話を聞いて感動したとき"
+    },
+    {
+      "type": "phrase",
+      "en": "Thanks, that's so nice of you.",
+      "ja": "ありがとう、うれしい",
+      "note": "ほめられたときの返し"
+    },
+    {
+      "type": "cta"
+    }
+  ],
+  "story": false
+}

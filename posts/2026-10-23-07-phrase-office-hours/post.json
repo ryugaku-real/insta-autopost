@@ -1,0 +1,41 @@
+{
+  "draft": false,
+  "publish_at": "2026-10-23 07:00+09:00",
+  "caption": "先生に質問しに行く「オフィスアワー」で使える英語🙋\n行くだけで印象もよくなります。勇気を出して使ってみてね！\n.\n.\n#英会話 #英語フレーズ #英語学習 #アメリカ留学 #留学準備 #留学生 #海外留学 #日常英会話 #英語勉強 #留学生活",
+  "slides": [
+    {
+      "type": "cover",
+      "label": "保存推奨",
+      "title": "オフィスアワーで\n使える\n英語フレーズ",
+      "sub": "先生に質問しよう"
+    },
+    {
+      "type": "phrase",
+      "en": "Do you have a minute?",
+      "ja": "少しお時間いいですか？",
+      "note": "研究室に入るとき"
+    },
+    {
+      "type": "phrase",
+      "en": "I had a question about the homework.",
+      "ja": "宿題について質問があります",
+      "note": "用件を伝えるとき"
+    },
+    {
+      "type": "phrase",
+      "en": "Could you explain this part again?",
+      "ja": "ここをもう一度説明してもらえますか？",
+      "note": "授業でわからなかった所"
+    },
+    {
+      "type": "phrase",
+      "en": "Thank you for your time.",
+      "ja": "お時間ありがとうございました",
+      "note": "帰るときに"
+    },
+    {
+      "type": "cta"
+    }
+  ],
+  "story": false
+}

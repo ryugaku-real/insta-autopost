@@ -1,0 +1,41 @@
+{
+  "draft": false,
+  "publish_at": "2026-10-29 07:00+09:00",
+  "caption": "図書館で使える英語フレーズ📚\nテスト前は図書館が大活躍。スタッフに気軽に聞いてみよう！\n.\n.\n#英会話 #英語フレーズ #英語学習 #アメリカ留学 #留学準備 #留学生 #海外留学 #日常英会話 #英語勉強 #留学生活",
+  "slides": [
+    {
+      "type": "cover",
+      "label": "保存推奨",
+      "title": "図書館で\n使える\n英語フレーズ",
+      "sub": "勉強の味方"
+    },
+    {
+      "type": "phrase",
+      "en": "Where can I find this book?",
+      "ja": "この本はどこにありますか？",
+      "note": "本を探すとき"
+    },
+    {
+      "type": "phrase",
+      "en": "Can I reserve a study room?",
+      "ja": "自習室を予約できますか？",
+      "note": "グループ勉強のとき"
+    },
+    {
+      "type": "phrase",
+      "en": "How long can I borrow this?",
+      "ja": "どれくらい借りられますか？",
+      "note": "貸出期間を聞く"
+    },
+    {
+      "type": "phrase",
+      "en": "Is this seat taken?",
+      "ja": "この席は空いていますか？",
+      "note": "席を探すとき"
+    },
+    {
+      "type": "cta"
+    }
+  ],
+  "story": false
+}

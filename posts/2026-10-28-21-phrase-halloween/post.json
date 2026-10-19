@@ -1,0 +1,41 @@
+{
+  "draft": false,
+  "publish_at": "2026-10-28 21:00+09:00",
+  "caption": "もうすぐハロウィン！🎃\nアメリカのハロウィンで使える英語フレーズをまとめました。\n.\n.\n#英会話 #英語フレーズ #英語学習 #アメリカ留学 #留学準備 #留学生 #海外留学 #日常英会話 #英語勉強 #留学生活",
+  "slides": [
+    {
+      "type": "cover",
+      "label": "保存推奨",
+      "title": "ハロウィンで\n使える\n英語フレーズ",
+      "sub": "10月31日は楽しもう"
+    },
+    {
+      "type": "phrase",
+      "en": "Trick or treat!",
+      "ja": "お菓子くれないといたずらするぞ！",
+      "note": "子どものお決まりの言葉"
+    },
+    {
+      "type": "phrase",
+      "en": "What are you going as?",
+      "ja": "何の仮装をするの？",
+      "note": "仮装を聞くとき"
+    },
+    {
+      "type": "phrase",
+      "en": "I love your costume!",
+      "ja": "その仮装すてき！",
+      "note": "仮装をほめるとき"
+    },
+    {
+      "type": "phrase",
+      "en": "Happy Halloween!",
+      "ja": "ハッピーハロウィン！",
+      "note": "あいさつとして"
+    },
+    {
+      "type": "cta"
+    }
+  ],
+  "story": true
+}

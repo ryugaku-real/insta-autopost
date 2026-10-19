@@ -1,0 +1,41 @@
+{
+  "draft": false,
+  "publish_at": "2026-10-25 07:00+09:00",
+  "caption": "バスや電車で使える英語フレーズ🚌\n車がない留学生の強い味方。乗る前に覚えておこう！\n.\n.\n#英会話 #英語フレーズ #英語学習 #アメリカ留学 #留学準備 #留学生 #海外留学 #日常英会話 #英語勉強 #留学生活",
+  "slides": [
+    {
+      "type": "cover",
+      "label": "保存推奨",
+      "title": "バス・電車で\n使える\n英語フレーズ",
+      "sub": "移動で困らない"
+    },
+    {
+      "type": "phrase",
+      "en": "Does this bus go to downtown?",
+      "ja": "このバスはダウンタウンに行きますか？",
+      "note": "乗る前に確認"
+    },
+    {
+      "type": "phrase",
+      "en": "How much is the fare?",
+      "ja": "運賃はいくらですか？",
+      "note": "料金を知りたいとき"
+    },
+    {
+      "type": "phrase",
+      "en": "Is this my stop?",
+      "ja": "ここで降りればいいですか？",
+      "note": "降りる場所が不安なとき"
+    },
+    {
+      "type": "phrase",
+      "en": "Could you let me know when we get there?",
+      "ja": "着いたら教えてもらえますか？",
+      "note": "運転手さんにお願い"
+    },
+    {
+      "type": "cta"
+    }
+  ],
+  "story": false
+}
