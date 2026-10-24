@@ -6,7 +6,8 @@
       "label": "保存推奨",
       "text": "教授へのメール\n!使える英語\nフレーズ",
       "sec": 3.0,
-      "photo": "library"
+      "photo": "library",
+      "icon": "mail"
     },
     {
       "type": "point",

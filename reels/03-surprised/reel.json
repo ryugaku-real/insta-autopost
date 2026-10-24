@@ -6,7 +6,8 @@
       "label": "あるある",
       "text": "アメリカ留学\n!驚いたこと5選",
       "sec": 3.0,
-      "photo": "campus"
+      "photo": "campus",
+      "icon": "globe"
     },
     {
       "type": "point",

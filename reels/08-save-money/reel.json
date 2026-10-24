@@ -6,7 +6,8 @@
       "label": "保存推奨",
       "text": "留学生の\n!節約術5選",
       "sec": 3.0,
-      "photo": "money"
+      "photo": "money",
+      "icon": "coin"
     },
     {
       "type": "point",

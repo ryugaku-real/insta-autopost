@@ -6,7 +6,8 @@
       "label": "保存推奨",
       "text": "アメリカの\n!チップいくら払う？",
       "sec": 3.0,
-      "photo": "coffee"
+      "photo": "coffee",
+      "icon": "card"
     },
     {
       "type": "point",

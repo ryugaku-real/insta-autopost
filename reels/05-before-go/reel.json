@@ -6,7 +6,8 @@
       "label": "保存推奨",
       "text": "留学前に\n!やっておけば\nよかったこと",
       "sec": 3.0,
-      "photo": "airport"
+      "photo": "airport",
+      "icon": "plane"
     },
     {
       "type": "point",

@@ -6,7 +6,8 @@
       "label": "英語フレーズ",
       "text": "OKだけ？\n!返事のバリエ5つ",
       "sec": 3.0,
-      "photo": "books"
+      "photo": "books",
+      "icon": "bubble"
     },
     {
       "type": "point",

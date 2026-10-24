@@ -12,7 +12,7 @@
 reel.json の書き方:
 {
   "caption": "キャプション本文 #タグ",
-  "voice": "happy",                      省略可。happy（既定）か normal
+  "voice": "takumi",                     省略可。takumi（既定）/ takumi_happy / happy / normal / genki
   "bgm": true,                           省略可。false でBGMなし
   "scenes": [
     {"type": "hook", "label": "保存推奨", "text": "留学1年目\\n!お金は何にかかる？"},
@@ -41,6 +41,7 @@ import numpy as np
 from PIL import Image, ImageDraw, ImageFilter
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import art  # noqa: E402  動くイラスト
 import render as R  # noqa: E402  フォント・折り返し・写真取得を共用
 
 ROOT = R.ROOT
@@ -51,7 +52,16 @@ JDIC = "/var/lib/mecab/dic/open-jtalk/naist-jdic"
 W, H, FPS, SR = 1080, 1920, 30, 48000
 YELLOW = (255, 214, 77)
 SAFE_TOP, SAFE_BOTTOM = 300, 1480   # アプリのUIに隠れない範囲
-CREDIT = "音声: HTS Voice \"Mei\" (c) Nagoya Institute of Technology / CC BY 3.0"
+# 声の種類: 名前 → (音声ファイル, 速さ, ピッチ補正, クレジット)
+NIT = "(c) Nagoya Institute of Technology / CC BY 3.0"
+VOICES = {
+    "takumi": ("takumi_normal", 1.12, 0.0, f'音声: HTS Voice "Takumi" {NIT}'),
+    "takumi_happy": ("takumi_happy", 1.12, 0.0, f'音声: HTS Voice "Takumi" {NIT}'),
+    "happy": ("mei_happy", 1.12, 1.0, f'音声: HTS Voice "Mei" {NIT}'),
+    "normal": ("mei_normal", 1.12, 1.0, f'音声: HTS Voice "Mei" {NIT}'),
+    "genki": ("mei_happy", 1.25, 3.0, f'音声: HTS Voice "Mei" {NIT}'),
+}
+DEFAULT_VOICE = "takumi"
 KANA_NO = ["ひとつめ", "ふたつめ", "みっつめ", "よっつめ", "いつつめ", "むっつめ", "ななつめ"]
 JA_RE = re.compile(r"[぀-ヿ一-鿿]")
 
@@ -103,8 +113,9 @@ def tts(kind: str, text: str, voice: str) -> np.ndarray:
         if kind == "ja":
             txt = CACHE / f"{key}.txt"
             txt.write_text(speak_text(text), encoding="utf-8")
-            _run(["open_jtalk", "-x", JDIC, "-m", str(VOICE_DIR / f"mei_{voice}.htsvoice"),
-                  "-s", "48000", "-p", "240", "-a", "0.55", "-r", "1.12", "-fm", "1.0", "-g", "3",
+            vf, rate, fm, _ = VOICES[voice]
+            _run(["open_jtalk", "-x", JDIC, "-m", str(VOICE_DIR / f"{vf}.htsvoice"),
+                  "-s", "48000", "-p", "240", "-a", "0.55", "-r", str(rate), "-fm", str(fm), "-g", "3",
                   "-ow", str(raw), str(txt)])
             txt.unlink()
         else:
@@ -296,7 +307,10 @@ class SceneCtx:
         gap = 14
         total_h = sum(c.height for c in self.crops) + gap * (len(self.crops) - 1)
         extra = 130 if (self.kind == "cta" and scene.get("pill", "＋ フォロー")) else 0
+        self.icon = scene.get("icon", "bookmark" if self.kind == "cta" else None)
         top = (SAFE_TOP + SAFE_BOTTOM) // 2 - (total_h + extra) // 2 + (50 if self.kind == "point" else 0)
+        if self.icon:
+            top = max(top, 690)
         self.pos, y = [], top
         for c in self.crops:
             self.pos.append((W // 2, y + c.height // 2))
@@ -315,6 +329,22 @@ def render_frame(c: SceneCtx, t: float, handle: Image.Image) -> Image.Image:
     bl = blobs(t, c.idx)
     frame.paste(bl, (0, 0), bl)
     d = ImageDraw.Draw(frame)
+
+    # 0) イラスト：中央上の小物（弾んで出る）と、左下のキャラ（口パク）
+    if c.icon:
+        a = ease_back((t - 0.05) / 0.5)
+        if a > 0:
+            ic = art.icon(c.icon, t)
+            sz = max(1, int(280 * a))
+            ic = ic.resize((sz, sz), Image.BILINEAR)
+            frame.paste(ic, (W // 2 - sz // 2, 390 - sz // 2), ic)
+    fi = min(int(t * FPS), len(pl["env"]) - 1) if len(pl.get("env", [])) else 0
+    mouth = float(pl["env"][fi]) if len(pl.get("env", [])) and t < pl["dur"] else 0.0
+    hop = max([math.sin(math.pi * (t - ap) / 0.3) for ap in pl["appear"] if 0 <= t - ap < 0.3] or [0.0])
+    mc = art.mascot(t + c.idx * 1.3, mouth, hop)
+    ms = int(300)
+    mc = mc.resize((ms, ms), Image.BILINEAR)
+    frame.paste(mc, (40, SAFE_BOTTOM + 30 - ms), mc)
 
     # 1) ラベル（hook）
     if c.kind == "hook" and scene.get("label"):
@@ -396,7 +426,7 @@ def handle_layer() -> Image.Image:
 
 # ------------------------------------------------------------------ 組み立て
 def build(name: str, spec: dict, out: Path) -> None:
-    voice = spec.get("voice", "happy")
+    voice = spec.get("voice", DEFAULT_VOICE)
     spoken = spec.get("voice_over", True)
     scenes = spec["scenes"]
     plans = [plan(s, i == 0, voice, spoken) for i, s in enumerate(scenes)]
@@ -404,6 +434,7 @@ def build(name: str, spec: dict, out: Path) -> None:
 
     # --- 音声を時間軸に並べる
     mix = np.zeros(int(total * SR) + SR, dtype=np.float32)
+    voice_only = np.zeros_like(mix)
     t0 = 0.0
     wh, pp = whoosh(), pop()
     for i, p in enumerate(plans):
@@ -416,9 +447,19 @@ def build(name: str, spec: dict, out: Path) -> None:
         for start, a, _ in p["items"]:
             s = int((t0 + start) * SR)
             mix[s:s + len(a)] += a
+            voice_only[s:s + len(a)] += a
         t0 += p["dur"]
     if spec.get("bgm", True):
         mix[: int(total * SR)] += bgm(total) * 0.12
+    spf = SR // FPS
+    nfr = int(total * FPS) + 2
+    rms = np.array([np.sqrt(np.mean(voice_only[i * spf:(i + 1) * spf] ** 2)) if (i + 1) * spf <= len(voice_only) else 0.0 for i in range(nfr)])
+    env = np.clip(rms / 0.22, 0, 1)
+    env = np.maximum(env, np.concatenate([[0], env[:-1]]) * 0.6)   # 口がパタパタしすぎないよう少し残す
+    off = 0.0
+    for p in plans:
+        p["env"] = env[int(round(off * FPS)): int(round((off + p["dur"]) * FPS)) + 1]
+        off += p["dur"]
     peak = float(np.abs(mix).max()) or 1.0
     if peak > 0.95:
         mix *= 0.95 / peak
@@ -493,7 +534,7 @@ def cmd_make(args) -> int:
         build(d.name, spec, out)
         cap = spec.get("caption", "").rstrip()
         if spec.get("voice_over", True):
-            cap += f"\n.\n{CREDIT}"
+            cap += f"\n.\n{VOICES[spec.get('voice', DEFAULT_VOICE)][3]}"
         (d / "caption.txt").write_text(cap + "\n", encoding="utf-8")
         sigf.write_text(sig)
     return 0

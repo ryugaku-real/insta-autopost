@@ -6,7 +6,8 @@
       "label": "進路",
       "text": "コミカレから\n!始める留学",
       "sec": 3.0,
-      "photo": "campus"
+      "photo": "campus",
+      "icon": "cap"
     },
     {
       "type": "point",
