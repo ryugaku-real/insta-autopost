@@ -30,6 +30,8 @@ import argparse
 import hashlib
 import json
 import math
+import multiprocessing as mp
+import os
 import re
 import shutil
 import subprocess
@@ -62,6 +64,7 @@ VOICES = {
     "genki": ("mei_happy", 1.25, 3.0, f'音声: HTS Voice "Mei" {NIT}'),
 }
 DEFAULT_VOICE = "takumi"
+FEMALE_VOICE = "normal"
 KANA_NO = ["ひとつめ", "ふたつめ", "みっつめ", "よっつめ", "いつつめ", "むっつめ", "ななつめ"]
 JA_RE = re.compile(r"[぀-ヿ一-鿿]")
 
@@ -199,6 +202,8 @@ def parse_lines(scene: dict) -> list[dict]:
         t = src.lstrip("!")
         lang = "en" if re.search(r"[A-Za-z]", t) and not JA_RE.search(t) else "ja"
         lines.append({"text": t, "accent": acc, "lang": lang})
+    if scene.get("note"):   # 見出しのあとに出る説明コメント（小さめの文字・同じく読み上げる）
+        lines.append({"text": scene["note"], "show": scene["note"].replace("。", "。\n").strip(), "accent": False, "lang": "ja", "note": True})
     return lines
 
 
@@ -233,6 +238,8 @@ def plan(scene: dict, first: bool, voice: str, spoken: bool) -> dict:
             items.append((t, a, None))
             t += len(a) / SR + 0.12
         for i, ln in enumerate(lines):
+            if ln.get("note"):
+                t += 0.15
             a = tts(ln["lang"], ln["text"], voice)
             appear[i] = max(0.05, t - 0.1)
             speak[i] = (t, t + len(a) / SR)
@@ -296,23 +303,33 @@ class SceneCtx:
         self.scene, self.idx, self.pl = scene, idx, pl
         self.kind = scene.get("type", "point")
         self.bg = background(name, scene, idx)
-        base = {"hook": 128, "cta": 108}.get(self.kind, 96)
+        has_note = any(ln.get("note") for ln in pl["lines"])
+        base = {"hook": 128, "cta": 108}.get(self.kind, 84 if has_note else 96)
         width = W - 160
         size = base
-        for ln in pl["lines"]:      # 全行で同じ大きさにそろえる
-            f, _, sz, _ = R.fit(ln["text"], True, base, width, 560, spacing=1.32, min_size=52)
-            size = min(size, sz)
+        for ln in pl["lines"]:      # 見出しの行は全部同じ大きさにそろえる
+            if not ln.get("note"):
+                f, _, sz, _ = R.fit(ln["text"], True, base, width, 560, spacing=1.32, min_size=52)
+                size = min(size, sz)
         f = R.font(True, size)
-        self.crops = [line_crop(ln["text"], f, size, width, YELLOW if ln["accent"] else R.WHITE) for ln in pl["lines"]]
+        self.crops = []
+        for ln in pl["lines"]:
+            if ln.get("note"):
+                nf, _, nsz, _ = R.fit(ln["show"], True, 56, W - 160, 330, spacing=1.32, min_size=40)
+                self.crops.append(line_crop(ln["show"], nf, nsz, W - 160, (226, 233, 250)))
+            else:
+                self.crops.append(line_crop(ln["text"], f, size, width, YELLOW if ln["accent"] else R.WHITE))
         gap = 14
-        total_h = sum(c.height for c in self.crops) + gap * (len(self.crops) - 1)
+        total_h = sum(c.height for c in self.crops) + gap * (len(self.crops) - 1) + (30 if has_note else 0)
         extra = 130 if (self.kind == "cta" and scene.get("pill", "＋ フォロー")) else 0
         self.icon = scene.get("icon", "bookmark" if self.kind == "cta" else None)
         top = (SAFE_TOP + SAFE_BOTTOM) // 2 - (total_h + extra) // 2 + (50 if self.kind == "point" else 0)
         if self.icon:
             top = max(top, 690)
         self.pos, y = [], top
-        for c in self.crops:
+        for c, ln in zip(self.crops, pl["lines"]):
+            if ln.get("note"):
+                y += 30
             self.pos.append((W // 2, y + c.height // 2))
             y += c.height + gap
         self.top, self.bottom = top, y
@@ -425,8 +442,28 @@ def handle_layer() -> Image.Image:
 
 
 # ------------------------------------------------------------------ 組み立て
-def build(name: str, spec: dict, out: Path) -> None:
-    voice = spec.get("voice", DEFAULT_VOICE)
+_G: dict = {}
+WORKERS = max(1, (os.cpu_count() or 2))
+
+
+def _work(fi: int) -> bytes:
+    """1フレーム描いて生のRGBを返す（子プロセスで動く）。"""
+    c, prev_last, handle, elapsed, total = _G["a"]
+    t = fi / FPS
+    fr = render_frame(c, t, handle)
+    if prev_last is not None and t < 0.3:      # 下から次のシーンがスライドして入る
+        e = ease_out(t / 0.3)
+        canvas = Image.new("RGB", (W, H))
+        canvas.paste(prev_last, (0, -int(0.18 * H * e)))
+        y = int(H * (1 - e))
+        canvas.paste(fr, (0, y))
+        ImageDraw.Draw(canvas).rectangle((0, y, W, y + 10), fill=R.RED)
+        fr = canvas
+    ImageDraw.Draw(fr).rectangle((0, 0, int(W * (elapsed + t) / total), 8), fill=R.RED)
+    return fr.tobytes()
+
+
+def build(name: str, spec: dict, out: Path, voice: str = DEFAULT_VOICE) -> None:
     spoken = spec.get("voice_over", True)
     scenes = spec["scenes"]
     plans = [plan(s, i == 0, voice, spoken) for i, s in enumerate(scenes)]
@@ -480,28 +517,19 @@ def build(name: str, spec: dict, out: Path) -> None:
     handle = handle_layer()
     prev_last = None
     elapsed = 0.0
+    ctx = mp.get_context("fork")
     try:
         for i, (s, p) in enumerate(zip(scenes, plans)):
             c = SceneCtx(name, s, i, p)
-            if i == 0:   # 表紙：フックの文字が全部そろった画面
+            if i == 0 and out.name == "reel.mp4":
+                # 表紙：フックの文字が全部そろった画面
                 render_frame(c, max(p["appear"]) + 0.8, handle).save(out.parent / "cover.jpg", quality=92)
             nf = int(round(p["dur"] * FPS))
-            last = None
-            for fi in range(nf):
-                t = fi / FPS
-                fr = render_frame(c, t, handle)
-                last = fr
-                if prev_last is not None and t < 0.3:      # 下から次のシーンがスライドして入る
-                    e = ease_out(t / 0.3)
-                    canvas = Image.new("RGB", (W, H))
-                    canvas.paste(prev_last, (0, -int(0.18 * H * e)))
-                    y = int(H * (1 - e))
-                    canvas.paste(fr, (0, y))
-                    ImageDraw.Draw(canvas).rectangle((0, y, W, y + 10), fill=R.RED)
-                    fr = canvas
-                ImageDraw.Draw(fr).rectangle((0, 0, int(W * (elapsed + t) / total), 8), fill=R.RED)
-                proc.stdin.write(fr.tobytes())
-            prev_last = last
+            _G["a"] = (c, prev_last, handle, elapsed, total)
+            with ctx.Pool(WORKERS) as pool:                 # フレームを複数コアで描く
+                for raw in pool.imap(_work, range(nf), chunksize=6):
+                    proc.stdin.write(raw)
+            prev_last = render_frame(c, (nf - 1) / FPS, handle)
             elapsed += p["dur"]
     finally:
         proc.stdin.close()
@@ -525,17 +553,21 @@ def cmd_make(args) -> int:
             sys.exit(f"{tool} が見つかりません（このファイルの先頭の「必要なもの」を参照）")
     for d in reel_dirs(args.names):
         spec = load(d)
-        out = d / "reel.mp4"
         sig = hashlib.md5((json.dumps(spec, sort_keys=True, ensure_ascii=False) + Path(__file__).read_text()).encode()).hexdigest()
         sigf = d / ".sig"
-        if out.exists() and not args.force and sigf.exists() and sigf.read_text() == sig:
+        if (d / "reel.mp4").exists() and not args.force and sigf.exists() and sigf.read_text() == sig:
             continue
-        print(f"[リール] {d.name}")
-        build(d.name, spec, out)
-        cap = spec.get("caption", "").rstrip()
-        if spec.get("voice_over", True):
-            cap += f"\n.\n{VOICES[spec.get('voice', DEFAULT_VOICE)][3]}"
-        (d / "caption.txt").write_text(cap + "\n", encoding="utf-8")
+        # 男声（reel.mp4）と女声（reel-female.mp4）の2種類を作る
+        variants = [("reel.mp4", "caption.txt", spec.get("voice", DEFAULT_VOICE))]
+        if spec.get("voice_over", True) and not args.male_only:
+            variants.append(("reel-female.mp4", "caption-female.txt", spec.get("voice_female", FEMALE_VOICE)))
+        for mp4, capf, voice in variants:
+            print(f"[リール] {d.name} / {mp4}（声: {voice}）", flush=True)
+            build(d.name, spec, d / mp4, voice)
+            cap = spec.get("caption", "").rstrip()
+            if spec.get("voice_over", True):
+                cap += f"\n.\n{VOICES[voice][3]}"
+            (d / capf).write_text(cap + "\n", encoding="utf-8")
         sigf.write_text(sig)
     return 0
 
@@ -553,6 +585,7 @@ def main() -> int:
     sub = ap.add_subparsers(dest="cmd", required=True)
     m = sub.add_parser("make")
     m.add_argument("--force", action="store_true")
+    m.add_argument("--male-only", action="store_true", help="女声バージョンを作らない")
     m.add_argument("names", nargs="*")
     m.set_defaults(fn=cmd_make)
     sub.add_parser("list").set_defaults(fn=cmd_list)

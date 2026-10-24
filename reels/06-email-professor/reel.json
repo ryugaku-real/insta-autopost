@@ -13,25 +13,25 @@
       "type": "point",
       "no": 1,
       "text": "Dear Professor ○○,\n!書き出しはこれ",
-      "sec": 3.2
+      "note": "書き出しは、先生の名字をつけて呼びかけます。丁寧な印象になります。"
     },
     {
       "type": "point",
       "no": 2,
       "text": "I was wondering if…\n!〜できますか（丁寧）",
-      "sec": 3.2
+      "note": "「〜してもらえますか」をていねいに頼む言い方。お願いごとに便利です。"
     },
     {
       "type": "point",
       "no": 3,
       "text": "Could you clarify…?\n!〜を教えてください",
-      "sec": 3.2
+      "note": "わからないところを聞くときに。「もう少し説明してもらえますか」の意味です。"
     },
     {
       "type": "point",
       "no": 4,
       "text": "Thank you for your time.\n!締めの一言",
-      "sec": 3.2
+      "note": "メールの最後の一言。「お時間をいただきありがとうございます」と伝えられます。"
     },
     {
       "type": "cta",
