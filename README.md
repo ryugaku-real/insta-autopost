@@ -124,3 +124,18 @@ tools/make_posts.py     ← 投稿データ（post.json）をまとめて作る�
 6. Variables に `YOUTUBE_ENABLED` = `1` を追加（公開設定は `YT_PRIVACY`、既定は private）
 
 未審査のGoogle Cloudプロジェクトからの動画は、公開設定にしても非公開に固定されます。
+
+---
+
+## 手動投稿用リール（reels/）
+自動投稿（posts/）とは別に、**自分でアプリから投稿する用**の縦型リール動画を作れます。`reels/` は自動投稿の対象外です。
+
+```
+reels/<名前>/reel.json   台本（シーンごとの文字・秒数）
+reels/<名前>/reel.mp4    動画（1080x1920・音声なし）→ 投稿アプリに入れる
+reels/<名前>/cover.jpg   表紙画像
+reels/<名前>/caption.txt キャプション（コピペ用）
+```
+- 動画作成: `python scripts/reel.py make`（変更したものだけ作り直す。`--force` で全部）
+- 一覧: `python scripts/reel.py list`
+- 音声は入っていません。TikTok / Instagram のアプリ内でトレンド音源を足してください。

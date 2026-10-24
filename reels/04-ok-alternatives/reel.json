@@ -1,0 +1,47 @@
+{
+  "caption": "「OK」以外の返事、使えてる？🗣️\nネイティブがよく使う返事フレーズ5つ。短いので今日から使えます。\n保存して声に出して練習してね📌\n.\n.\n#英語フレーズ #英会話 #留学英語 #アメリカ留学 #留学準備 #大学留学 #正規留学 #留学生活 #海外留学 #留学生",
+  "scenes": [
+    {
+      "type": "hook",
+      "label": "英語フレーズ",
+      "text": "OKだけ？\n!返事のバリエ5つ",
+      "sec": 3.0,
+      "photo": "books"
+    },
+    {
+      "type": "point",
+      "no": 1,
+      "text": "Sounds good.\n!いいね、それで行こう",
+      "sec": 3.2
+    },
+    {
+      "type": "point",
+      "no": 2,
+      "text": "No worries.\n!気にしないで",
+      "sec": 3.2
+    },
+    {
+      "type": "point",
+      "no": 3,
+      "text": "That makes sense.\n!なるほど、わかる",
+      "sec": 3.2
+    },
+    {
+      "type": "point",
+      "no": 4,
+      "text": "I'm down.\n!いいね、乗った",
+      "sec": 3.2
+    },
+    {
+      "type": "point",
+      "no": 5,
+      "text": "Got it.\n!了解、わかった",
+      "sec": 3.2
+    },
+    {
+      "type": "cta",
+      "text": "!保存して\n声に出して練習",
+      "sec": 2.6
+    }
+  ]
+}

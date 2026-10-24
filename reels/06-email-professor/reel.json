@@ -1,0 +1,41 @@
+{
+  "caption": "教授にメールを送るときの英語フレーズ📧\n丁寧で使いやすい表現をまとめました。件名は短く具体的に。\n保存してコピペで使ってね📌\n.\n.\n#英語メール #留学英語 #大学生活 #アメリカ留学 #留学準備 #大学留学 #正規留学 #留学生活 #海外留学 #留学生",
+  "scenes": [
+    {
+      "type": "hook",
+      "label": "保存推奨",
+      "text": "教授へのメール\n!使える英語\nフレーズ",
+      "sec": 3.0,
+      "photo": "library"
+    },
+    {
+      "type": "point",
+      "no": 1,
+      "text": "Dear Professor ○○,\n!書き出しはこれ",
+      "sec": 3.2
+    },
+    {
+      "type": "point",
+      "no": 2,
+      "text": "I was wondering if…\n!〜できますか（丁寧）",
+      "sec": 3.2
+    },
+    {
+      "type": "point",
+      "no": 3,
+      "text": "Could you clarify…?\n!〜を教えてください",
+      "sec": 3.2
+    },
+    {
+      "type": "point",
+      "no": 4,
+      "text": "Thank you for your time.\n!締めの一言",
+      "sec": 3.2
+    },
+    {
+      "type": "cta",
+      "text": "!保存して\nコピペで使ってね",
+      "sec": 2.6
+    }
+  ]
+}
