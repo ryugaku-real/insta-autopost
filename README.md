@@ -139,3 +139,4 @@ reels/<名前>/caption.txt キャプション（コピペ用）
 - 動画作成: `python scripts/reel.py make`（変更したものだけ作り直す。`--force` で全部）
 - 一覧: `python scripts/reel.py list`
 - 音声は入っていません。TikTok / Instagram のアプリ内でトレンド音源を足してください。
+- 読み上げ: Open JTalk（音声「Mei」）と espeak-ng、BGM・効果音つき。**音声 "Mei" は CC BY 3.0 のため、キャプション末尾のクレジット行（caption.txt に自動で入る）を残してください。**
