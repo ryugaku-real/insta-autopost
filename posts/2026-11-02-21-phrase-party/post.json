@@ -1,0 +1,41 @@
+{
+  "draft": false,
+  "publish_at": "2026-11-02 21:00+09:00",
+  "caption": "パーティーで使える英語フレーズ🎉\n寮や友達のパーティーに誘われたら、まずはこの一言から！\n.\n.\n#英会話 #英語フレーズ #英語学習 #アメリカ留学 #留学準備 #留学生 #海外留学 #日常英会話 #英語勉強 #留学生活",
+  "slides": [
+    {
+      "type": "cover",
+      "label": "保存推奨",
+      "title": "パーティーで\n使える\n英語フレーズ",
+      "sub": "はじめての人と話そう"
+    },
+    {
+      "type": "phrase",
+      "en": "Thanks for inviting me!",
+      "ja": "誘ってくれてありがとう！",
+      "note": "着いたとき"
+    },
+    {
+      "type": "phrase",
+      "en": "How do you know the host?",
+      "ja": "主催者とはどういう知り合い？",
+      "note": "会話のきっかけに"
+    },
+    {
+      "type": "phrase",
+      "en": "I should get going.",
+      "ja": "そろそろ行かなきゃ",
+      "note": "帰るとき"
+    },
+    {
+      "type": "phrase",
+      "en": "Let's hang out again!",
+      "ja": "また遊ぼうね！",
+      "note": "別れぎわに"
+    },
+    {
+      "type": "cta"
+    }
+  ],
+  "story": true
+}

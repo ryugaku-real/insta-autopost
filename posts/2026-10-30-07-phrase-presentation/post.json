@@ -1,0 +1,41 @@
+{
+  "draft": false,
+  "publish_at": "2026-10-30 07:00+09:00",
+  "caption": "クラス発表で使える英語フレーズ🎤\n発表は留学生にとって大きな山場。決まり文句を覚えておくと落ち着けるよ！\n.\n.\n#英会話 #英語フレーズ #英語学習 #アメリカ留学 #留学準備 #留学生 #海外留学 #日常英会話 #英語勉強 #留学生活",
+  "slides": [
+    {
+      "type": "cover",
+      "label": "保存推奨",
+      "title": "授業の発表で\n使える\n英語フレーズ",
+      "sub": "緊張しても大丈夫"
+    },
+    {
+      "type": "phrase",
+      "en": "Today, I'm going to talk about...",
+      "ja": "今日は〜について話します",
+      "note": "発表のはじめに"
+    },
+    {
+      "type": "phrase",
+      "en": "Let me move on to the next point.",
+      "ja": "次のポイントに進みます",
+      "note": "話題を変えるとき"
+    },
+    {
+      "type": "phrase",
+      "en": "Could you repeat the question?",
+      "ja": "質問をもう一度お願いします",
+      "note": "質問が聞き取れないとき"
+    },
+    {
+      "type": "phrase",
+      "en": "That's a great question.",
+      "ja": "いい質問ですね",
+      "note": "答える前に少し考えたいとき"
+    },
+    {
+      "type": "cta"
+    }
+  ],
+  "story": false
+}

@@ -1,0 +1,41 @@
+{
+  "draft": false,
+  "publish_at": "2026-11-01 07:00+09:00",
+  "caption": "美容院で使える英語フレーズ💇\n伝え方がわかれば、海外の美容院もこわくない！写真を見せるのもおすすめ。\n.\n.\n#英会話 #英語フレーズ #英語学習 #アメリカ留学 #留学準備 #留学生 #海外留学 #日常英会話 #英語勉強 #留学生活",
+  "slides": [
+    {
+      "type": "cover",
+      "label": "保存推奨",
+      "title": "美容院で\n使える\n英語フレーズ",
+      "sub": "髪を切りたい時に"
+    },
+    {
+      "type": "phrase",
+      "en": "I'd like to make an appointment.",
+      "ja": "予約をしたいです",
+      "note": "電話や受付で"
+    },
+    {
+      "type": "phrase",
+      "en": "Just a trim, please.",
+      "ja": "毛先をそろえるだけでお願いします",
+      "note": "少しだけ切りたいとき"
+    },
+    {
+      "type": "phrase",
+      "en": "Not too short, please.",
+      "ja": "短くしすぎないでください",
+      "note": "長さを伝えるとき"
+    },
+    {
+      "type": "phrase",
+      "en": "Can you make it like this?",
+      "ja": "こんな感じにできますか？",
+      "note": "写真を見せながら"
+    },
+    {
+      "type": "cta"
+    }
+  ],
+  "story": false
+}

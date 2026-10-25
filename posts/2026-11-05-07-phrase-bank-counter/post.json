@@ -1,0 +1,41 @@
+{
+  "draft": false,
+  "publish_at": "2026-11-05 07:00+09:00",
+  "caption": "銀行の窓口で使える英語フレーズ🏦\n手続きに必要な書類は銀行によって違います。事前に確認していこう。\n.\n.\n#英会話 #英語フレーズ #英語学習 #アメリカ留学 #留学準備 #留学生 #海外留学 #日常英会話 #英語勉強 #留学生活",
+  "slides": [
+    {
+      "type": "cover",
+      "label": "保存推奨",
+      "title": "銀行の窓口で\n使える\n英語フレーズ",
+      "sub": "口座の手続きに"
+    },
+    {
+      "type": "phrase",
+      "en": "I'd like to open an account.",
+      "ja": "口座を開きたいです",
+      "note": "口座を作るとき"
+    },
+    {
+      "type": "phrase",
+      "en": "What documents do I need?",
+      "ja": "どんな書類が必要ですか？",
+      "note": "必要なものを聞く"
+    },
+    {
+      "type": "phrase",
+      "en": "I lost my card.",
+      "ja": "カードをなくしました",
+      "note": "カードをなくしたとき"
+    },
+    {
+      "type": "phrase",
+      "en": "Can you explain the fees?",
+      "ja": "手数料について説明してもらえますか？",
+      "note": "お金のことを確認"
+    },
+    {
+      "type": "cta"
+    }
+  ],
+  "story": false
+}
