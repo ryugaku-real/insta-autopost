@@ -28,6 +28,12 @@ export interface School {
   athleticAid?: { total: number; men: number; women: number; coed: number };
   /** Average net price after grant aid (College Scorecard), USD/year */
   avgNetPrice?: number | null;
+  /** On-campus housing (IPEDS IC survey): offered?, typical yearly room charge, room+board charge, capacity, survey year */
+  dorm?: boolean;
+  roomCost?: number;
+  roomBoardCost?: number;
+  dormCap?: number;
+  housingYear?: string;
   /** Does the school give athletic scholarships? (D3 and NCAA D1/D2 rules differ) */
   athleticScholarship: boolean;
   /** Structured cost lines (tuition, room & board, books, total) and researched tuition note, built from Scorecard + per-school research */

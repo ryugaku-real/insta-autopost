@@ -28,6 +28,7 @@ export default function App() {
   const [divisions, setDivisions] = useState<Division[]>([]);
   const [level, setLevel] = useState<'ALL' | '4year' | '2year'>('ALL');
   const [scholarshipOnly, setScholarshipOnly] = useState(false);
+  const [dormOnly, setDormOnly] = useState(false);
   const [selected, setSelected] = useState<School | null>(null);
   const [stateSel, setStateSel] = useState<string[]>([]);
   const [confSel, setConfSel] = useState<string[]>([]);
@@ -101,13 +102,14 @@ export default function App() {
       (confSel.length === 0 || (!!sc.conference && confSel.includes(sc.conference))) &&
       (sportSel.length === 0 || sportSel.every((n) => sc.sports.some((x) => x.name === n))) &&
       (!scholarshipOnly || sc.athleticScholarship) &&
+      (!dormOnly || sc.dorm === true) &&
       (!q || [sc.name, sc.nameJa ?? '', sc.state, sc.city, ...sc.sports.flatMap((x) => [x.name, x.nameJa])]
         .some((t) => t.toLowerCase().includes(q)) ||
         [`${sc.association}${sc.division}`, sc.division, sc.association].some((t) => t.toLowerCase().replace(/[\s_-]+/g, '').includes(nq))));
     if (sortKey === 'cost') list.sort((a, b) => (a.tuitionOutOfState ?? Infinity) - (b.tuitionOutOfState ?? Infinity));
     else if (sortKey === 'pct') list.sort((a, b) => (b.athleticScholarshipPct ?? -1) - (a.athleticScholarshipPct ?? -1));
     return list;
-  }, [schools, query, divisions, level, scholarshipOnly, stateSel, confSel, sportSel, maxCost, favOnly, favs, sortKey]);
+  }, [schools, query, divisions, level, scholarshipOnly, dormOnly, stateSel, confSel, sportSel, maxCost, favOnly, favs, sortKey]);
 
   if (showPlan) return <PlanScreen premium={premium} onSet={setPremiumSaved} onBack={() => setShowPlan(false)} />;
   if (showCmp) return <Compare showCheer={cheerSelected} list={schools.filter((x) => cmp.includes(x.id))} onBack={() => setShowCmp(false)} onRemove={toggleCmp} />;
@@ -134,6 +136,7 @@ export default function App() {
         <Chip label={tr('4年制', '4-year')} on={level === '4year'} onPress={() => setLevel(level === '4year' ? 'ALL' : '4year')} />
         <Chip label={tr('短大', 'Junior college')} on={level === '2year'} onPress={() => setLevel(level === '2year' ? 'ALL' : '2year')} />
         <Chip label={tr('アスリート奨学金あり', 'Athletic scholarships')} on={scholarshipOnly} onPress={() => setScholarshipOnly(!scholarshipOnly)} />
+        <Chip label={tr('🏠 寮あり', '🏠 Dorms available')} on={dormOnly} onPress={() => setDormOnly(!dormOnly)} />
       </View>
       <View style={st.row}>
         <Chip label={tr('★お気に入り', '★ Favorites')} on={favOnly} onPress={() => setFavOnly(!favOnly)} />
@@ -188,11 +191,21 @@ export default function App() {
           <Text style={st.meta}>{item.city}, {item.state} ・ {item.level === '4year' ? tr('4年制', '4-year') : tr('短大', 'Junior college')} ・ {item.division.startsWith(item.association) ? item.division : `${item.association} ${item.division}`}</Text>
           <Text style={st.meta}>{tr('州外学費', 'Out-of-state')} {item.tuitionOutOfState != null ? `$${item.tuitionOutOfState.toLocaleString()}` : '—'}{tr('/年', '/yr')} ・ {tr('アスリート奨学金', 'Athletic aid')} {item.athleticScholarshipPct == null ? '—' : tr(`最大${item.athleticScholarshipPct}%`, `up to ${item.athleticScholarshipPct}%`)}</Text>
           <Pressable onPress={() => toggleCmp(item.id)}><Text style={st.link}>{cmp.includes(item.id) ? tr('✓ 比較に追加済み(タップで外す)', '✓ Added to compare (tap to remove)') : cmp.length >= cmpLimit ? tr(`比較は${cmpLimit}校まで`, `Compare limit: ${cmpLimit}`) : tr('＋ 比較に追加', '+ Add to compare')}</Text></Pressable>
+          <Text style={st.meta}>{dormLine(item)}</Text>
           <Text style={st.meta}>{item.sports.length ? item.sports.map((x) => spName(x.name, x.nameJa)).join(tr('・', ', ')) : tr('競技情報: 準備中', 'Sports: coming soon')}</Text>
         </Pressable>)} />
     </View>
   );
 }
+
+/** one-line housing summary for list cards: dorm availability + yearly room (or room & board) charge */
+const dormLine = (sc: School) => {
+  if (sc.dorm == null) return tr('🏠 寮: 情報なし', '🏠 Dorms: no data');
+  if (!sc.dorm) return tr('🏠 寮なし(学外で住居を探す)', '🏠 No on-campus housing (find off-campus)');
+  const room = sc.roomCost != null ? tr(`寮費 $${sc.roomCost.toLocaleString()}/年`, `Dorm $${sc.roomCost.toLocaleString()}/yr`) : tr('寮あり(寮費は要確認)', 'Dorms available (fee: check school)');
+  const both = sc.roomBoardCost != null ? tr(` ・ 食費込み $${sc.roomBoardCost.toLocaleString()}/年`, ` ・ with meals $${sc.roomBoardCost.toLocaleString()}/yr`) : '';
+  return `🏠 ${room}${both}`;
+};
 
 const host = (u: string) => u.replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0];
 const google = (q: string) => `https://www.google.com/search?q=${encodeURIComponent(q)}`;
@@ -273,6 +286,7 @@ function Detail({ school: sc, onBack, fav, onFav, showCheer, premium, onPlan }: 
             <Text style={st.meta}>{tr('所在地', 'Location')}: {sc.city}, {sc.state}</Text>
       <Text style={st.meta}>{tr('種別', 'Type')}: {sc.level === '4year' ? tr('4年制', '4-year') : tr('短大', 'Junior college')} / {sc.control === 'public' ? tr('公立', 'Public') : tr('私立', 'Private')}</Text>
       <Text style={st.meta}>{tr('所属', 'Affiliation')}: {sc.association} / {sc.division}{sc.conference ? ` / ${sc.conference}` : ''}</Text>
+      <Text style={st.meta}>{dormLine(sc)}{sc.housingYear ? tr(`(${sc.housingYear}年度・目安)`, ` (${sc.housingYear}, approx.)`) : ''}</Text>
       <Text style={st.meta}>{tr('学費(年)', 'Tuition (yr)')}: {tr('州内', 'In-state')} {money(sc.tuitionInState)} / {tr('州外', 'Out-of-state')} {money(sc.tuitionOutOfState)}</Text>
       <Text style={st.meta}>{tr('アスリート奨学金', 'Athletic scholarships')}: {sc.athleticScholarship ? tr('あり', 'Yes') : tr('なし', 'No')}</Text>
       <View style={st.summary}>
