@@ -192,6 +192,7 @@ export default function App() {
           <Text style={st.meta}>{tr('州外学費', 'Out-of-state')} {item.tuitionOutOfState != null ? `$${item.tuitionOutOfState.toLocaleString()}` : '—'}{tr('/年', '/yr')} ・ {tr('アスリート奨学金', 'Athletic aid')} {item.athleticScholarshipPct == null ? '—' : tr(`最大${item.athleticScholarshipPct}%`, `up to ${item.athleticScholarshipPct}%`)}</Text>
           <Pressable onPress={() => toggleCmp(item.id)}><Text style={st.link}>{cmp.includes(item.id) ? tr('✓ 比較に追加済み(タップで外す)', '✓ Added to compare (tap to remove)') : cmp.length >= cmpLimit ? tr(`比較は${cmpLimit}校まで`, `Compare limit: ${cmpLimit}`) : tr('＋ 比較に追加', '+ Add to compare')}</Text></Pressable>
           <Text style={st.meta}>{dormLine(item)}</Text>
+          <Text style={st.meta}>🗣 {tr('英語', 'English')}: {premium ? engShort(item) : tr('🔒 Proプランで表示', '🔒 Pro plan')}</Text>
           <Text style={st.meta}>{item.sports.length ? item.sports.map((x) => spName(x.name, x.nameJa)).join(tr('・', ', ')) : tr('競技情報: 準備中', 'Sports: coming soon')}</Text>
         </Pressable>)} />
     </View>
@@ -205,6 +206,22 @@ const dormLine = (sc: School) => {
   const room = sc.roomCost != null ? tr(`寮費 $${sc.roomCost.toLocaleString()}/年`, `Dorm $${sc.roomCost.toLocaleString()}/yr`) : tr('寮あり(寮費は要確認)', 'Dorms available (fee: check school)');
   const both = sc.roomBoardCost != null ? tr(` ・ 食費込み $${sc.roomBoardCost.toLocaleString()}/年`, ` ・ with meals $${sc.roomBoardCost.toLocaleString()}/yr`) : '';
   return `🏠 ${room}${both}`;
+};
+
+/** compact English-score summary for list cards, pulled from the researched englishReq text (first TOEFL / IELTS / Duolingo figure mentioned) */
+const engShort = (sc: School): string => {
+  const t = sc.englishReq ?? '';
+  if (!t) return tr('未調査', 'not researched');
+  const parts: string[] = [];
+  const toefl = t.match(/TOEFL\s*(?:iBT)?\s*(?:新(?:スケール|形式)\s*)?([\d.]{1,4})/);
+  const ieltsM = t.match(/IELTS\s*([\d.]{1,3})/);
+  const det = t.match(/(?:Duolingo|DET)\s*(\d{2,3})/);
+  if (toefl && /\d/.test(toefl[1])) parts.push(`TOEFL ${/新/.test(toefl[0]) ? tr('新', 'new ') : ''}${toefl[1].replace(/\.$/, '')}`);
+  if (ieltsM && /\d/.test(ieltsM[1])) parts.push(`IELTS ${ieltsM[1].replace(/\.$/, '')}`);
+  if (det) parts.push(`DET ${det[1]}`);
+  if (parts.length) return parts.join(' / ') + (/任意|必須ではない|推奨/.test(t) ? tr('(提出は任意・目安)', ' (optional, guide)') : /要確認/.test(t) ? tr('(一部要確認)', ' (verify)') : '');
+  if (/最低点の設定なし|最低点なし/.test(t)) return tr('最低点の設定なし', 'no minimum score');
+  return tr('公式情報なし・要確認', 'not found — verify');
 };
 
 const host = (u: string) => u.replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0];
