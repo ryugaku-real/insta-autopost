@@ -6,6 +6,7 @@
   python scripts/ig.py check                 トークンとアカウントの接続テスト
   python scripts/ig.py refresh --out FILE    長期トークンを更新して FILE に書き出す
   python scripts/ig.py validate              posts/ の中身をチェックするだけ
+  python scripts/ig.py insights [--limit N]  フォロワー数と、投稿ごとの到達・保存・いいねを一覧する（読み取りのみ）
 
 必要な環境変数:
   IG_ACCESS_TOKEN   長期アクセストークン（GitHub Secrets に保存）
@@ -387,6 +388,50 @@ def cmd_check(_args) -> int:
     return 0
 
 
+def media_insights(media_id: str) -> dict:
+    """投稿ごとの数字（取れる分だけ）。権限がない・種類が違う場合は空で返す。"""
+    out: dict = {}
+    for metric in ("reach", "saved", "shares", "views", "total_interactions"):
+        try:
+            res = api("GET", f"{media_id}/insights", {"metric": metric})
+            vals = res.get("data", [])
+            if vals:
+                out[metric] = vals[0]["values"][0]["value"]
+        except ApiError as e:
+            out.setdefault("_err", str(e)[:160])
+    return out
+
+
+def cmd_insights(args) -> int:
+    ig_id = os.environ.get("IG_USER_ID", "").strip() or "me"
+    me = api("GET", ig_id, {"fields": "username,followers_count,follows_count,media_count"})
+    lines = [f"## @{me.get('username')}  フォロワー {me.get('followers_count')} / 投稿 {me.get('media_count')}", ""]
+    res = api("GET", f"{ig_id}/media",
+              {"fields": "id,caption,permalink,timestamp,media_product_type,like_count,comments_count",
+               "limit": args.limit})
+    rows = []
+    for m in res.get("data", []):
+        ins = media_insights(m["id"])
+        rows.append({**m, **ins})
+    rows.sort(key=lambda r: (r.get("saved") or 0, r.get("reach") or 0, r.get("like_count") or 0), reverse=True)
+    lines += ["| 投稿 | 種類 | 日時 | 到達 | 保存 | シェア | 表示 | いいね | コメント |", "|---|---|---|---|---|---|---|---|---|"]
+    err = ""
+    for r in rows:
+        err = err or r.get("_err", "")
+        cap = (r.get("caption") or "").strip().splitlines()[0][:28] if r.get("caption") else r["id"]
+        lines.append(f"| [{cap}]({r.get('permalink')}) | {r.get('media_product_type')} | {r.get('timestamp', '')[:16]} | "
+                     f"{r.get('reach', '-')} | {r.get('saved', '-')} | {r.get('shares', '-')} | {r.get('views', '-')} | "
+                     f"{r.get('like_count', '-')} | {r.get('comments_count', '-')} |")
+    if err:
+        lines += ["", f"※一部の数字が取れませんでした（権限不足の可能性）: {err}"]
+    text = "\n".join(lines)
+    print(text)
+    summary = os.environ.get("GITHUB_STEP_SUMMARY")
+    if summary:
+        Path(summary).write_text(text + "\n", encoding="utf-8")
+    return 0
+
+
 def cmd_refresh(args) -> int:
     res = api("GET", "refresh_access_token",
               {"grant_type": "ig_refresh_token"}, versioned=False)
@@ -406,12 +451,15 @@ def main() -> int:
     p.add_argument("--dry-run", action="store_true")
     sub.add_parser("check")
     sub.add_parser("validate")
+    i = sub.add_parser("insights")
+    i.add_argument("--limit", type=int, default=50)
     r = sub.add_parser("refresh")
     r.add_argument("--out", required=True)
     args = ap.parse_args()
     try:
         return {"publish": cmd_publish, "check": cmd_check,
-                "validate": cmd_validate, "refresh": cmd_refresh}[args.cmd](args)
+                "validate": cmd_validate, "refresh": cmd_refresh,
+                "insights": cmd_insights}[args.cmd](args)
     except ApiError as e:
         print(f"エラー: {e}")
         return 1
