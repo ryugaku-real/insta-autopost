@@ -63,39 +63,80 @@ def render_set(name: str) -> list[Image.Image]:
     return ims
 
 
+def _card(src: Image.Image, w: int, h: int, angle: float):
+    """角丸＋影つきのカードを回転させて返す（RGBA）"""
+    from PIL import ImageFilter
+    pad = 60
+    im = src.resize((w, h)).convert("RGBA")
+    mask = Image.new("L", (w, h), 0)
+    ImageDraw.Draw(mask).rounded_rectangle((0, 0, w - 1, h - 1), radius=26, fill=255)
+    im.putalpha(mask)
+    border = Image.new("RGBA", (w + 24, h + 24), (0, 0, 0, 0))
+    bd = ImageDraw.Draw(border)
+    bd.rounded_rectangle((0, 0, w + 23, h + 23), radius=34, fill=(255, 255, 255, 255))
+    border.alpha_composite(im, (12, 12))
+    canvas = Image.new("RGBA", (w + 24 + pad * 2, h + 24 + pad * 2), (0, 0, 0, 0))
+    shadow = Image.new("RGBA", canvas.size, (0, 0, 0, 0))
+    ImageDraw.Draw(shadow).rounded_rectangle((pad + 6, pad + 24, pad + w + 18, pad + h + 42), radius=34, fill=(20, 33, 61, 110))
+    shadow = shadow.filter(ImageFilter.GaussianBlur(24))
+    canvas.alpha_composite(shadow)
+    canvas.alpha_composite(border, (pad, pad))
+    return canvas.rotate(angle, expand=True, resample=Image.BICUBIC)
+
+
 def listing_main(sets: dict[str, list[Image.Image]]) -> None:
     """出品ページのメイン画像（4:3, 1600x1200）"""
     apply(THEMES["study"])
     CW, CH = 1600, 1200
-    NAVY, ACC, CREAM = (20, 33, 61), (214, 40, 57), (250, 247, 240)
-    im = Image.new("RGB", (CW, CH), CREAM)
-    d = ImageDraw.Draw(im)
-    d.rectangle((0, 0, CW, 420), fill=NAVY)
-    t1, t2 = "Instagramカルーセル投稿を制作", "保存したくなる図解を、1本から"
-    f1, f2 = R.font(True, 84), R.font(True, 52)
-    d.text(((CW - f1.getlength(t1)) / 2, 90), t1, font=f1, fill=(255, 255, 255))
-    d.rounded_rectangle((CW / 2 - 120, 235, CW / 2 + 120, 247), radius=6, fill=ACC)
-    d.text(((CW - f2.getlength(t2)) / 2, 285), t2, font=f2, fill=(200, 210, 230))
-    # 実績の自分のアカウント画像は含めず、制作例（架空サンプル）を並べる
-    picks = [sets["beauty"][0], sets["beauty"][1], sets["study"][0], sets["study"][2]]
-    tw, th = 330, 412
-    gap = (CW - tw * 4) // 5
-    for i, p in enumerate(picks):
-        x = gap + i * (tw + gap)
-        y = 470
-        d.rounded_rectangle((x - 8, y - 8, x + tw + 8, y + th + 8), radius=18, fill=(255, 255, 255))
-        im.paste(p.resize((tw, th)), (x, y))
-    badges = ["1080×1350 縦長", "キャプション付き", "修正2回まで"]
-    f3 = R.font(True, 40)
-    bx = 90
-    for b in badges:
-        w = f3.getlength(b) + 60
-        d.rounded_rectangle((bx, 1010, bx + w, 1090), radius=40, fill=NAVY)
-        d.text((bx + 30, 1022), b, font=f3, fill=(255, 255, 255))
+    NAVY, ACC = (20, 33, 61), (232, 62, 90)
+    # 背景：やわらかいグラデーション
+    im = Image.new("RGB", (CW, CH))
+    px = im.load()
+    for y in range(CH):
+        for x in range(0, CW):
+            t = (x / CW * 0.6 + y / CH * 0.4)
+            px[x, y] = (int(255 - 18 * t), int(236 + 6 * t), int(232 + 20 * t))
+    d = ImageDraw.Draw(im, "RGBA")
+    d.ellipse((900, -250, 1900, 750), fill=(255, 190, 200, 120))
+    d.ellipse((-300, 800, 600, 1500), fill=(190, 215, 255, 130))
+    # 左：見出し
+    f_pill, f_h, f_sub = R.font(True, 42), R.font(True, 100), R.font(True, 50)
+    pt = "Instagram投稿制作"
+    w = f_pill.getlength(pt) + 70
+    d.rounded_rectangle((70, 80, 70 + w, 160), radius=40, fill=NAVY)
+    d.text((105, 92), pt, font=f_pill, fill=(255, 255, 255))
+    # 見出し3行（2行目に蛍光ペン風のライン）
+    d.text((70, 215), "保存したくなる", font=f_h, fill=NAVY)
+    d.rounded_rectangle((70, 435, 70 + f_h.getlength("図解投稿を") + 10, 470), radius=14, fill=(255, 214, 90, 255))
+    d.text((70, 330), "図解投稿を", font=f_h, fill=NAVY)
+    d.text((70, 450), "1本から。", font=f_h, fill=ACC)
+    d.text((72, 610), "画像＋キャプションまで制作", font=f_sub, fill=(70, 80, 105))
+    # 右：カードを重ねて配置
+    cards = [(sets["study"][1], -9, 780, 250), (sets["beauty"][1], 7, 1080, 330), (sets["beauty"][0], -2, 930, 140)]
+    for src, ang, x, y in cards:
+        c = _card(src, 360, 450, ang)
+        im.paste(c, (x - 40, y - 20), c)
+    d = ImageDraw.Draw(im, "RGBA")
+    # 下：特徴バッジ
+    f_b = R.font(True, 40)
+    items = ["5枚構成", "縦長1080×1350", "修正2回まで"]
+    bx, by = 70, 840
+    for t in items:
+        w = f_b.getlength(t) + 120
+        d.rounded_rectangle((bx, by, bx + w, by + 96), radius=48, fill=(255, 255, 255, 255), outline=NAVY, width=4)
+        d.ellipse((bx + 22, by + 26, bx + 66, by + 70), fill=ACC)
+        d.line((bx + 32, by + 48, bx + 41, by + 58, bx + 57, by + 38), fill=(255, 255, 255), width=6, joint="curve")
+        d.text((bx + 84, by + 20), t, font=f_b, fill=NAVY)
         bx += w + 24
-    f4 = R.font(False, 26)
-    d.text((90, 1130), "※掲載の制作例は架空のサンプルです", font=f4, fill=(120, 128, 145))
-    im.save(HERE / "listing_main.jpg", quality=90, optimize=True)
+    # 下の帯
+    d.rectangle((0, 1040, CW, CH), fill=NAVY)
+    f_t = R.font(True, 54)
+    msg = "運用中アカウントの経験で、投稿づくりをお手伝い"
+    d.text(((CW - f_t.getlength(msg)) / 2, 1075), msg, font=f_t, fill=(255, 255, 255))
+    f_n = R.font(False, 26)
+    note = "※掲載の制作例は架空のサンプルです"
+    d.text(((CW - f_n.getlength(note)) / 2, 1148), note, font=f_n, fill=(190, 200, 225))
+    im.save(HERE / "listing_main.jpg", quality=92, optimize=True)
 
 
 def main() -> None:
