@@ -117,6 +117,18 @@ def listing_main(sets: dict[str, list[Image.Image]]) -> None:
         c = _card(src, 360, 450, ang)
         im.paste(c, (x - 40, y - 20), c)
     d = ImageDraw.Draw(im, "RGBA")
+    # 右上：お試し価格のバッジ（価格を変えたら PRICE を直して再実行）
+    PRICE = "3,000"
+    cx, cy, r = 1420, 160, 125
+    d.ellipse((cx - r - 8, cy - r - 8, cx + r + 8, cy + r + 8), fill=(255, 255, 255, 255))
+    d.ellipse((cx - r, cy - r, cx + r, cy + r), fill=ACC)
+    f_s, f_p, f_y = R.font(True, 32), R.font(True, 60), R.font(True, 32)
+    t1 = "お試し価格"
+    d.text((cx - f_s.getlength(t1) / 2, cy - 78), t1, font=f_s, fill=(255, 255, 255))
+    wp, wy = f_p.getlength(PRICE), f_y.getlength("円")
+    x0 = cx - (wp + wy) / 2
+    d.text((x0, cy - 30), PRICE, font=f_p, fill=(255, 255, 255))
+    d.text((x0 + wp + 2, cy + 8), "円", font=f_y, fill=(255, 255, 255))
     # 下：特徴バッジ
     f_b = R.font(True, 40)
     items = ["5枚構成", "縦長1080×1350", "修正2回まで"]
