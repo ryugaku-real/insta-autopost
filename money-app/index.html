@@ -124,11 +124,6 @@ details[open] summary { margin-bottom: 10px; }
     </div>
   </div>
 
-  <div id="sampleBanner" class="banner" hidden>
-    <span>いまはサンプルのデータです。</span>
-    <button type="button" class="ghost" id="clearSample">消して自分の分を入れる</button>
-  </div>
-
   <section aria-labelledby="hBal">
     <h2 id="hBal">残高</h2>
     <div class="balances" id="balances"></div>
@@ -198,6 +193,7 @@ details[open] summary { margin-bottom: 10px; }
       <div class="actions" style="margin-top:8px">
         <button type="button" class="ghost" id="exportBtn">書き出す</button>
         <button type="button" class="ghost" id="importBtn">この内容を読み込む</button>
+        <button type="button" class="ghost" id="resetBtn">すべて0にリセット</button>
       </div>
       <p class="note small" id="backupNote" role="status"></p>
     </details>
@@ -222,23 +218,12 @@ details[open] summary { margin-bottom: 10px; }
     return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
   }
 
-  function sampleState() {
-    var ym = todayStr().slice(0, 7);
+  function emptyState() {
     return {
-      sample: true,
+      sample: false, tx: [], wishes: [],
       cards: [
-        { id: 'card-a', name: 'カードA', opening: 50000 },
-        { id: 'card-b', name: 'カードB', opening: 20000 },
-      ],
-      tx: [
-        { id: 's1', type: 'income', amount: 120000, cardId: 'card-a', category: '給料', date: ym + '-01', memo: 'サンプル' },
-        { id: 's2', type: 'expense', amount: 1280, cardId: 'card-b', category: '食費', date: ym + '-02', memo: 'ランチ' },
-        { id: 's3', type: 'expense', amount: 3400, cardId: 'card-a', category: '娯楽', date: ym + '-03', memo: '映画とポップコーン' },
-        { id: 's4', type: 'transfer', amount: 10000, cardId: 'card-a', toCardId: 'card-b', category: '', date: ym + '-04', memo: '' },
-      ],
-      wishes: [
-        { id: 'w1', name: 'ワイヤレスイヤホン', price: 18000 },
-        { id: 'w2', name: 'ゲーミングチェア', price: 45000 },
+        { id: 'card-a', name: 'カードA', opening: 0 },
+        { id: 'card-b', name: 'カードB', opening: 0 },
       ],
     };
   }
@@ -247,8 +232,8 @@ details[open] summary { margin-bottom: 10px; }
     try {
       var raw = localStorage.getItem(KEY);
       if (raw) return L.normalizeState(JSON.parse(raw));
-    } catch (e) { /* 保存が使えない・壊れているときはサンプルから始める */ }
-    return sampleState();
+    } catch (e) { /* 保存が使えない・壊れているときは0から始める */ }
+    return emptyState();
   }
   function save() {
     try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) { /* 保存できなくても動かす */ }
@@ -355,7 +340,6 @@ details[open] summary { margin-bottom: 10px; }
   }
 
   function renderAll() {
-    $('sampleBanner').hidden = !state.sample;
     renderBalances(); renderSummary(); renderHistory(); renderWishes(); renderCardSettings(); fillCardSelects();
   }
 
@@ -453,13 +437,20 @@ details[open] summary { margin-bottom: 10px; }
   $('prevMonth').addEventListener('click', function () { ym = L.shiftMonth(ym, -1); renderSummary(); renderHistory(); });
   $('nextMonth').addEventListener('click', function () { ym = L.shiftMonth(ym, 1); renderSummary(); renderHistory(); });
 
-  $('clearSample').addEventListener('click', function () {
-    state = {
-      sample: false, tx: [], wishes: [],
-      cards: state.cards.map(function (c) { return { id: c.id, name: c.name, opening: 0 }; }),
-    };
+  var resetArmed = false;
+  $('resetBtn').addEventListener('click', function () {
+    if (!resetArmed) {
+      resetArmed = true;
+      $('resetBtn').textContent = '本当にすべて消す（もう一度押す）';
+      $('backupNote').textContent = '残高・記録・ほしい物リストがすべて消えます。';
+      return;
+    }
+    resetArmed = false;
+    state = emptyState();
+    resetTxForm(); resetWishForm();
+    $('resetBtn').textContent = 'すべて0にリセット';
+    $('backupNote').textContent = 'すべて0に戻しました。';
     commit();
-    document.querySelector('details').open = true;
   });
 
   $('exportBtn').addEventListener('click', function () {
