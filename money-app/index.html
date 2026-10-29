@@ -1,0 +1,489 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>カード家計簿</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+/* レイアウト: 1カラムのスマホ向け。上から 残高(カード2枚+合計) → 今月の収支 → 入力 → ほしい物 → 履歴 */
+:root {
+  --bg: #f2f4f1;
+  --surface: #ffffff;
+  --ink: #17211c;
+  --muted: #5b6a62;
+  --line: #d8ded9;
+  --income: #17704e;
+  --expense: #b23a2b;
+  --accent: #1d4f8c;
+  --accent-ink: #ffffff;
+  --card-a: #2457a6;
+  --card-b: #946000;
+  --ok-bg: #dff1e7;
+  --ng-bg: #f6e3df;
+  --font: "Zen Kaku Gothic New", "Hiragino Sans", "Yu Gothic", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #101512; --surface: #182019; --ink: #e8efe9; --muted: #9aa99f; --line: #2b372e;
+    --income: #4cc38a; --expense: #f08a78; --accent: #7db0ee; --accent-ink: #0c1722;
+    --card-a: #7fa8ea; --card-b: #e5ad5a; --ok-bg: #1b3a2b; --ng-bg: #3d221d;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #101512; --surface: #182019; --ink: #e8efe9; --muted: #9aa99f; --line: #2b372e;
+  --income: #4cc38a; --expense: #f08a78; --accent: #7db0ee; --accent-ink: #0c1722;
+  --card-a: #7fa8ea; --card-b: #e5ad5a; --ok-bg: #1b3a2b; --ng-bg: #3d221d;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body {
+  background: var(--bg); color: var(--ink); font-family: var(--font); font-size: 15px; line-height: 1.6;
+  padding-block: 20px 48px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+main { max-width: 640px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+h1 { font-size: 1.35rem; margin: 0; letter-spacing: 0.02em; }
+h2 { font-size: 1rem; margin: 0 0 10px; letter-spacing: 0.04em; }
+.num { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.muted { color: var(--muted); }
+.small { font-size: 0.82rem; }
+section { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px; min-width: 0; }
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.top { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.month { display: flex; align-items: center; gap: 8px; }
+.month button, .ghost {
+  background: transparent; border: 1px solid var(--line); border-radius: 6px; padding: 4px 12px; min-height: 36px;
+}
+.month strong { min-width: 7.5em; text-align: center; }
+.banner {
+  background: var(--ok-bg); border-radius: 8px; padding: 10px 12px; display: flex; gap: 10px;
+  align-items: center; justify-content: space-between; flex-wrap: wrap;
+}
+.balances { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.bal { border-top: 4px solid var(--c, var(--line)); background: var(--bg); border-radius: 6px; padding: 10px 12px; min-width: 0; }
+.bal .name { font-size: 0.85rem; color: var(--muted); overflow-wrap: anywhere; }
+.bal .amt { font-size: 1.35rem; font-weight: 600; overflow-wrap: anywhere; }
+.total { grid-column: 1 / -1; display: flex; justify-content: space-between; align-items: baseline; gap: 8px; padding: 8px 2px 0; flex-wrap: wrap; }
+.total .amt { font-size: 1.6rem; font-weight: 600; }
+.neg { color: var(--expense); }
+.summary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; text-align: center; }
+.summary div { padding: 6px 4px; min-width: 0; }
+.summary .amt { font-size: 1.05rem; font-weight: 600; overflow-wrap: anywhere; }
+.inc { color: var(--income); }
+.exp { color: var(--expense); }
+form { display: flex; flex-direction: column; gap: 12px; }
+.seg { display: grid; grid-template-columns: repeat(3, 1fr); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.seg label { text-align: center; padding: 8px 4px; cursor: pointer; border-right: 1px solid var(--line); }
+.seg label:last-child { border-right: 0; }
+.seg input { position: absolute; opacity: 0; pointer-events: none; }
+.seg label:has(input:checked) { background: var(--accent); color: var(--accent-ink); font-weight: 700; }
+.seg label:has(input:focus-visible) { outline: 3px solid var(--accent); outline-offset: -3px; }
+.row2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.field > span { font-size: 0.82rem; color: var(--muted); }
+input[type=text], input[type=number], input[type=date], select, textarea {
+  background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; min-height: 40px; width: 100%; min-width: 0;
+}
+textarea { min-height: 90px; font-family: var(--mono); font-size: 0.8rem; }
+.primary { background: var(--accent); color: var(--accent-ink); border: 0; border-radius: 8px; padding: 10px 16px; font-weight: 700; min-height: 44px; }
+.actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.list li { border-top: 1px solid var(--line); padding: 10px 0; display: flex; gap: 10px; justify-content: space-between; align-items: flex-start; }
+.list li:first-child { border-top: 0; }
+.grow { min-width: 0; flex: 1; }
+.title { font-weight: 500; overflow-wrap: anywhere; }
+.side { text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+.mini { background: transparent; border: 0; color: var(--accent); padding: 2px 4px; font-size: 0.82rem; text-decoration: underline; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+.chip { font-size: 0.78rem; border-radius: 999px; padding: 1px 10px; background: var(--bg); border: 1px solid var(--line); }
+.chip.ok { background: var(--ok-bg); border-color: transparent; color: var(--income); font-weight: 700; }
+.chip.ng { background: var(--ng-bg); border-color: transparent; color: var(--expense); }
+.empty { color: var(--muted); padding: 8px 0; }
+details summary { cursor: pointer; font-weight: 700; }
+details[open] summary { margin-bottom: 10px; }
+.hidden-field[hidden] { display: none; }
+.note { min-height: 1.4em; margin: 6px 0 0; }
+</style>
+</head>
+<body>
+<main>
+  <div class="top">
+    <h1>カード家計簿</h1>
+    <div class="month" role="group" aria-label="表示する月">
+      <button type="button" id="prevMonth" aria-label="前の月">‹</button>
+      <strong id="monthLabel" class="num"></strong>
+      <button type="button" id="nextMonth" aria-label="次の月">›</button>
+    </div>
+  </div>
+
+  <div id="sampleBanner" class="banner" hidden>
+    <span>いまはサンプルのデータです。</span>
+    <button type="button" class="ghost" id="clearSample">消して自分の分を入れる</button>
+  </div>
+
+  <section aria-labelledby="hBal">
+    <h2 id="hBal">残高</h2>
+    <div class="balances" id="balances"></div>
+  </section>
+
+  <section aria-labelledby="hSum">
+    <h2 id="hSum">今月の収支</h2>
+    <div class="summary" id="summary"></div>
+    <p class="small muted" style="margin:8px 0 0">カード間の移動は収入にも支出にも入れません。</p>
+  </section>
+
+  <section aria-labelledby="hForm">
+    <h2 id="hForm">記録する</h2>
+    <form id="txForm" autocomplete="off">
+      <div class="seg" role="radiogroup" aria-label="種類">
+        <label><input type="radio" name="type" value="expense" checked>支出</label>
+        <label><input type="radio" name="type" value="income">収入</label>
+        <label><input type="radio" name="type" value="transfer">移動</label>
+      </div>
+      <div class="row2">
+        <label class="field"><span>金額（円）</span><input type="number" id="txAmount" inputmode="numeric" min="1" step="1" required></label>
+        <label class="field"><span>日付</span><input type="date" id="txDate" required></label>
+      </div>
+      <div class="row2">
+        <label class="field"><span id="fromLabel">使ったカード</span><select id="txCard"></select></label>
+        <label class="field hidden-field" id="toWrap" hidden><span>移動先のカード</span><select id="txToCard"></select></label>
+        <label class="field" id="catWrap"><span>カテゴリ</span><select id="txCategory"></select></label>
+      </div>
+      <label class="field"><span>メモ（なくてもOK）</span><input type="text" id="txMemo" maxlength="60"></label>
+      <div class="actions">
+        <button type="submit" class="primary" id="txSubmit">追加する</button>
+        <button type="button" class="ghost" id="txCancel" hidden>編集をやめる</button>
+      </div>
+      <p class="note small" id="txNote" role="status"></p>
+    </form>
+  </section>
+
+  <section aria-labelledby="hWish">
+    <h2 id="hWish">ほしい物リスト</h2>
+    <div id="wishSummary" class="small muted"></div>
+    <ul class="list" id="wishList"></ul>
+    <form id="wishForm" autocomplete="off" style="margin-top:12px">
+      <div class="row2">
+        <label class="field"><span>ほしい物</span><input type="text" id="wishName" maxlength="40" required></label>
+        <label class="field"><span>値段（円）</span><input type="number" id="wishPrice" inputmode="numeric" min="0" step="1" required></label>
+      </div>
+      <div class="actions">
+        <button type="submit" class="primary" id="wishSubmit">リストに入れる</button>
+        <button type="button" class="ghost" id="wishCancel" hidden>編集をやめる</button>
+      </div>
+    </form>
+    <p class="small muted" style="margin-bottom:0">リストに入れただけでは残高は減りません。買ったら支出として記録してください。</p>
+  </section>
+
+  <section aria-labelledby="hHist">
+    <h2 id="hHist">今月の履歴</h2>
+    <ul class="list" id="history"></ul>
+  </section>
+
+  <section>
+    <details>
+      <summary>カード設定とバックアップ</summary>
+      <div id="cardSettings" style="display:flex;flex-direction:column;gap:12px"></div>
+      <h2 style="margin-top:18px">バックアップ</h2>
+      <p class="small muted" style="margin-top:0">データはこの端末のブラウザにだけ保存されています。「書き出す」で出た文字を、メモなどに保存しておくと復元できます。</p>
+      <textarea id="backup" aria-label="バックアップのデータ" spellcheck="false"></textarea>
+      <div class="actions" style="margin-top:8px">
+        <button type="button" class="ghost" id="exportBtn">書き出す</button>
+        <button type="button" class="ghost" id="importBtn">この内容を読み込む</button>
+      </div>
+      <p class="note small" id="backupNote" role="status"></p>
+    </details>
+  </section>
+</main>
+
+<script src="logic.js"></script>
+<script>
+(function () {
+  var L = window.MoneyLogic;
+  var KEY = 'money-app-v1';
+  var $ = function (id) { return document.getElementById(id); };
+  var esc = function (s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  };
+  var yen = L.formatYen;
+
+  function todayStr() {
+    var d = new Date();
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  }
+
+  function sampleState() {
+    var ym = todayStr().slice(0, 7);
+    return {
+      sample: true,
+      cards: [
+        { id: 'card-a', name: 'カードA', opening: 50000 },
+        { id: 'card-b', name: 'カードB', opening: 20000 },
+      ],
+      tx: [
+        { id: 's1', type: 'income', amount: 120000, cardId: 'card-a', category: '給料', date: ym + '-01', memo: 'サンプル' },
+        { id: 's2', type: 'expense', amount: 1280, cardId: 'card-b', category: '食費', date: ym + '-02', memo: 'ランチ' },
+        { id: 's3', type: 'expense', amount: 3400, cardId: 'card-a', category: '娯楽', date: ym + '-03', memo: '映画とポップコーン' },
+        { id: 's4', type: 'transfer', amount: 10000, cardId: 'card-a', toCardId: 'card-b', category: '', date: ym + '-04', memo: '' },
+      ],
+      wishes: [
+        { id: 'w1', name: 'ワイヤレスイヤホン', price: 18000 },
+        { id: 'w2', name: 'ゲーミングチェア', price: 45000 },
+      ],
+    };
+  }
+
+  function load() {
+    try {
+      var raw = localStorage.getItem(KEY);
+      if (raw) return L.normalizeState(JSON.parse(raw));
+    } catch (e) { /* 保存が使えない・壊れているときはサンプルから始める */ }
+    return sampleState();
+  }
+  function save() {
+    try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) { /* 保存できなくても動かす */ }
+  }
+
+  var state = load();
+  var ym = todayStr().slice(0, 7);
+  var editingTx = null;
+  var editingWish = null;
+  var CARD_COLORS = ['var(--card-a)', 'var(--card-b)'];
+
+  function cardName(id) {
+    var c = state.cards.find(function (x) { return x.id === id; });
+    return c ? c.name : '?';
+  }
+  function amtClass(n) { return n < 0 ? 'num neg' : 'num'; }
+
+  function renderBalances() {
+    var html = state.cards.map(function (c, i) {
+      var b = L.cardBalance(state, c.id);
+      return '<div class="bal" style="--c:' + CARD_COLORS[i] + '"><div class="name">' + esc(c.name) +
+        '</div><div class="amt ' + amtClass(b) + '">' + yen(b) + '</div></div>';
+    }).join('');
+    var t = L.totalBalance(state);
+    html += '<div class="total"><span class="muted">2枚の合計</span><span class="amt ' + amtClass(t) + '">' + yen(t) + '</span></div>';
+    $('balances').innerHTML = html;
+  }
+
+  function renderSummary() {
+    var s = L.monthSummary(state, ym);
+    $('summary').innerHTML =
+      '<div><div class="small muted">収入</div><div class="amt num inc">' + yen(s.income) + '</div></div>' +
+      '<div><div class="small muted">支出</div><div class="amt num exp">' + yen(s.expense) + '</div></div>' +
+      '<div><div class="small muted">差し引き</div><div class="amt ' + amtClass(s.net) + '">' + yen(s.net) + '</div></div>';
+    $('monthLabel').textContent = ym.slice(0, 4) + '年' + Number(ym.slice(5, 7)) + '月';
+  }
+
+  function renderHistory() {
+    var items = state.tx.filter(function (t) { return t.date.slice(0, 7) === ym; })
+      .sort(function (a, b) { return a.date < b.date ? 1 : a.date > b.date ? -1 : 0; });
+    if (!items.length) { $('history').innerHTML = '<li class="empty">この月の記録はまだありません。</li>'; return; }
+    $('history').innerHTML = items.map(function (t) {
+      var label = t.type === 'transfer' ? esc(cardName(t.cardId)) + ' → ' + esc(cardName(t.toCardId)) : esc(t.category || '未分類');
+      var sign = t.type === 'income' ? '+' : t.type === 'expense' ? '−' : '';
+      var cls = t.type === 'income' ? 'inc' : t.type === 'expense' ? 'exp' : '';
+      var sub = t.date.slice(5).replace('-', '/') + (t.type === 'transfer' ? '' : '・' + esc(cardName(t.cardId))) + (t.memo ? '・' + esc(t.memo) : '');
+      return '<li><div class="grow"><div class="title">' + label + '</div><div class="small muted">' + sub + '</div></div>' +
+        '<div class="side"><span class="num ' + cls + '">' + sign + yen(t.amount) + '</span><span>' +
+        '<button type="button" class="mini" data-edit-tx="' + esc(t.id) + '">編集</button>' +
+        '<button type="button" class="mini" data-del-tx="' + esc(t.id) + '">削除</button></span></div></li>';
+    }).join('');
+  }
+
+  function renderWishes() {
+    var sum = L.wishlistSummary(state);
+    $('wishSummary').innerHTML = state.wishes.length
+      ? '合計 <span class="num">' + yen(sum.sum) + '</span>。全部買うには、いまの残高であと <span class="num ' + (sum.short ? 'exp' : 'inc') + '">' + yen(sum.short) + '</span> ' + (sum.short ? '足りません。' : '足りています。')
+      : '';
+    if (!state.wishes.length) { $('wishList').innerHTML = '<li class="empty">ほしい物を入れると、買えるかどうかが出ます。</li>'; return; }
+    $('wishList').innerHTML = state.wishes.map(function (w) {
+      var st = L.wishStatus(state, w);
+      var chips = '<span class="chip ' + (st.canBuyTotal ? 'ok' : 'ng') + '">' +
+        (st.canBuyTotal ? '合計で買える' : '合計であと' + yen(st.shortTotal)) + '</span>' +
+        st.perCard.map(function (p) {
+          return '<span class="chip ' + (p.canBuy ? 'ok' : '') + '">' + esc(p.name) + ' ' + (p.canBuy ? '買える' : 'あと' + yen(p.short)) + '</span>';
+        }).join('');
+      return '<li><div class="grow"><div class="title">' + esc(w.name) + '</div><div class="chips">' + chips + '</div></div>' +
+        '<div class="side"><span class="num">' + yen(w.price) + '</span><span>' +
+        '<button type="button" class="mini" data-edit-wish="' + esc(w.id) + '">編集</button>' +
+        '<button type="button" class="mini" data-del-wish="' + esc(w.id) + '">削除</button></span></div></li>';
+    }).join('');
+  }
+
+  function renderCardSettings() {
+    var wrap = $('cardSettings');
+    if (wrap.contains(document.activeElement)) return;
+    wrap.innerHTML = state.cards.map(function (c, i) {
+      return '<div class="row2"><label class="field"><span>カード' + (i + 1) + 'の名前</span><input type="text" id="cn' + i + '" value="' + esc(c.name) + '" maxlength="20"></label>' +
+        '<label class="field"><span>使い始めの残高（円）</span><input type="number" id="co' + i + '" value="' + c.opening + '" step="1" inputmode="numeric"></label></div>';
+    }).join('');
+  }
+
+  function fillCardSelects() {
+    ['txCard', 'txToCard'].forEach(function (id, k) {
+      var sel = $(id);
+      var cur = sel.value;
+      sel.innerHTML = state.cards.map(function (c) { return '<option value="' + esc(c.id) + '">' + esc(c.name) + '</option>'; }).join('');
+      sel.value = cur && state.cards.some(function (c) { return c.id === cur; }) ? cur : state.cards[k].id;
+    });
+  }
+
+  function curType() { return document.querySelector('input[name=type]:checked').value; }
+
+  function applyType() {
+    var t = curType();
+    $('toWrap').hidden = t !== 'transfer';
+    $('catWrap').hidden = t === 'transfer';
+    $('fromLabel').textContent = t === 'expense' ? '使ったカード' : t === 'income' ? '入ったカード' : '移動元のカード';
+    if (t !== 'transfer') {
+      var prev = $('txCategory').value;
+      $('txCategory').innerHTML = L.CATEGORIES[t].map(function (c) { return '<option>' + c + '</option>'; }).join('');
+      if (L.CATEGORIES[t].indexOf(prev) >= 0) $('txCategory').value = prev;
+    }
+  }
+
+  function renderAll() {
+    $('sampleBanner').hidden = !state.sample;
+    renderBalances(); renderSummary(); renderHistory(); renderWishes(); renderCardSettings(); fillCardSelects();
+  }
+
+  function resetTxForm() {
+    editingTx = null;
+    $('txAmount').value = ''; $('txMemo').value = '';
+    $('txSubmit').textContent = '追加する'; $('txCancel').hidden = true;
+  }
+  function resetWishForm() {
+    editingWish = null;
+    $('wishName').value = ''; $('wishPrice').value = '';
+    $('wishSubmit').textContent = 'リストに入れる'; $('wishCancel').hidden = true;
+  }
+
+  function commit() { save(); renderAll(); }
+
+  document.querySelectorAll('input[name=type]').forEach(function (r) { r.addEventListener('change', applyType); });
+
+  $('txForm').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var t = curType();
+    var amount = Number($('txAmount').value);
+    var note = $('txNote');
+    if (!isFinite(amount) || amount < 1 || Math.floor(amount) !== amount) { note.textContent = '金額は1円以上の整数で入れてください。'; return; }
+    var rec = {
+      id: editingTx || L.newId(), type: t, amount: amount, cardId: $('txCard').value,
+      toCardId: t === 'transfer' ? $('txToCard').value : undefined,
+      category: t === 'transfer' ? '' : $('txCategory').value, date: $('txDate').value, memo: $('txMemo').value.trim(),
+    };
+    if (t === 'transfer' && rec.cardId === rec.toCardId) { note.textContent = '移動元と移動先は別のカードにしてください。'; return; }
+    if (editingTx) state.tx = state.tx.map(function (x) { return x.id === editingTx ? rec : x; });
+    else state.tx.push(rec);
+    if (rec.date.slice(0, 7) !== ym) ym = rec.date.slice(0, 7);
+    note.textContent = editingTx ? '更新しました。' : '追加しました。';
+    resetTxForm();
+    commit();
+  });
+  $('txCancel').addEventListener('click', function () { resetTxForm(); $('txNote').textContent = ''; });
+
+  $('history').addEventListener('click', function (e) {
+    var del = e.target.getAttribute('data-del-tx');
+    var ed = e.target.getAttribute('data-edit-tx');
+    if (del) { state.tx = state.tx.filter(function (t) { return t.id !== del; }); commit(); }
+    if (ed) {
+      var t = state.tx.find(function (x) { return x.id === ed; });
+      if (!t) return;
+      editingTx = t.id;
+      document.querySelector('input[name=type][value=' + t.type + ']').checked = true;
+      applyType();
+      $('txAmount').value = t.amount; $('txDate').value = t.date; $('txCard').value = t.cardId; $('txMemo').value = t.memo;
+      if (t.type === 'transfer') $('txToCard').value = t.toCardId; else $('txCategory').value = t.category;
+      $('txSubmit').textContent = '更新する'; $('txCancel').hidden = false;
+      $('txForm').scrollIntoView({ block: 'center' });
+    }
+  });
+
+  $('wishForm').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var price = Number($('wishPrice').value);
+    if (!isFinite(price) || price < 0 || Math.floor(price) !== price) return;
+    var rec = { id: editingWish || L.newId(), name: $('wishName').value.trim(), price: price };
+    if (!rec.name) return;
+    if (editingWish) state.wishes = state.wishes.map(function (w) { return w.id === editingWish ? rec : w; });
+    else state.wishes.push(rec);
+    resetWishForm();
+    commit();
+  });
+  $('wishCancel').addEventListener('click', resetWishForm);
+  $('wishList').addEventListener('click', function (e) {
+    var del = e.target.getAttribute('data-del-wish');
+    var ed = e.target.getAttribute('data-edit-wish');
+    if (del) { state.wishes = state.wishes.filter(function (w) { return w.id !== del; }); commit(); }
+    if (ed) {
+      var w = state.wishes.find(function (x) { return x.id === ed; });
+      if (!w) return;
+      editingWish = w.id; $('wishName').value = w.name; $('wishPrice').value = w.price;
+      $('wishSubmit').textContent = '更新する'; $('wishCancel').hidden = false;
+      $('wishForm').scrollIntoView({ block: 'center' });
+    }
+  });
+
+  $('cardSettings').addEventListener('change', function () {
+    state.cards.forEach(function (c, i) {
+      var name = $('cn' + i).value.trim();
+      var op = Number($('co' + i).value);
+      if (name) c.name = name;
+      if (isFinite(op) && Math.floor(op) === op) c.opening = op;
+    });
+    state.sample = false;
+    save();
+    $('cardSettings').querySelectorAll('input').forEach(function (el) { el.blur(); });
+    renderAll();
+  });
+
+  $('prevMonth').addEventListener('click', function () { ym = L.shiftMonth(ym, -1); renderSummary(); renderHistory(); });
+  $('nextMonth').addEventListener('click', function () { ym = L.shiftMonth(ym, 1); renderSummary(); renderHistory(); });
+
+  $('clearSample').addEventListener('click', function () {
+    state = {
+      sample: false, tx: [], wishes: [],
+      cards: state.cards.map(function (c) { return { id: c.id, name: c.name, opening: 0 }; }),
+    };
+    commit();
+    document.querySelector('details').open = true;
+  });
+
+  $('exportBtn').addEventListener('click', function () {
+    var ta = $('backup');
+    ta.value = JSON.stringify(state);
+    ta.focus(); ta.select();
+    var done = function (ok) { $('backupNote').textContent = ok ? '書き出して、コピーしました。' : '書き出しました。表示された文字をコピーして保存してください。'; };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(ta.value).then(function () { done(true); }, function () { done(false); });
+    else done(false);
+  });
+  $('importBtn').addEventListener('click', function () {
+    try {
+      state = L.normalizeState(JSON.parse($('backup').value));
+      save(); renderAll();
+      $('backupNote').textContent = '読み込みました。';
+    } catch (err) {
+      $('backupNote').textContent = '読み込めませんでした: ' + err.message;
+    }
+  });
+
+  $('txDate').value = todayStr();
+  applyType();
+  renderAll();
+})();
+</script>
+</body>
+</html>
