@@ -1,0 +1,41 @@
+{
+  "draft": false,
+  "publish_at": "2026-11-11 21:00+09:00",
+  "caption": "アメリカの友だちとのメッセージで使う英語💬\n短くてシンプルな言い方が多いよ。\n.\n.\n#英会話 #英語フレーズ #英語学習 #アメリカ留学 #留学準備 #留学生 #海外留学 #日常英会話 #英語勉強 #留学生活",
+  "slides": [
+    {
+      "type": "cover",
+      "label": "保存推奨",
+      "title": "メッセージで\n使える\n英語フレーズ",
+      "sub": "友だちとのやりとり"
+    },
+    {
+      "type": "phrase",
+      "en": "Are you free tonight?",
+      "ja": "今夜ひま？",
+      "note": "さそうとき"
+    },
+    {
+      "type": "phrase",
+      "en": "Running a bit late, sorry!",
+      "ja": "ちょっと遅れる、ごめん！",
+      "note": "遅れるとき"
+    },
+    {
+      "type": "phrase",
+      "en": "Sounds good!",
+      "ja": "いいね！",
+      "note": "OKの返事"
+    },
+    {
+      "type": "phrase",
+      "en": "Let me know when you're here.",
+      "ja": "着いたら教えて",
+      "note": "待ち合わせ"
+    },
+    {
+      "type": "cta"
+    }
+  ],
+  "story": true
+}

@@ -1,0 +1,41 @@
+{
+  "draft": false,
+  "publish_at": "2026-11-07 21:00+09:00",
+  "caption": "週末の予定を話す英語フレーズ🎉\n友だちとの会話のきっかけに使ってみてね。\n.\n.\n#英会話 #英語フレーズ #英語学習 #アメリカ留学 #留学準備 #留学生 #海外留学 #日常英会話 #英語勉強 #留学生活",
+  "slides": [
+    {
+      "type": "cover",
+      "label": "保存推奨",
+      "title": "週末の予定\nを話す\n英語フレーズ",
+      "sub": "友だちとの会話に"
+    },
+    {
+      "type": "phrase",
+      "en": "Any plans for the weekend?",
+      "ja": "週末なにか予定ある？",
+      "note": "会話のきっかけ"
+    },
+    {
+      "type": "phrase",
+      "en": "I'm just going to relax.",
+      "ja": "ゆっくりするつもり",
+      "note": "予定がないとき"
+    },
+    {
+      "type": "phrase",
+      "en": "Do you want to hang out?",
+      "ja": "一緒に遊ばない？",
+      "note": "さそうとき"
+    },
+    {
+      "type": "phrase",
+      "en": "How was your weekend?",
+      "ja": "週末どうだった？",
+      "note": "月曜日のあいさつ"
+    },
+    {
+      "type": "cta"
+    }
+  ],
+  "story": true
+}

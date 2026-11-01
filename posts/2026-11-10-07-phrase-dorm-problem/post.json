@@ -1,0 +1,41 @@
+{
+  "draft": false,
+  "publish_at": "2026-11-10 07:00+09:00",
+  "caption": "寮でトラブルがあったときの英語フレーズ🔧\n困ったら一人でがまんせず、寮のスタッフに相談してね。\n.\n.\n#英会話 #英語フレーズ #英語学習 #アメリカ留学 #留学準備 #留学生 #海外留学 #日常英会話 #英語勉強 #留学生活",
+  "slides": [
+    {
+      "type": "cover",
+      "label": "保存推奨",
+      "title": "寮で\n困ったときの\n英語フレーズ",
+      "sub": "スタッフに伝える"
+    },
+    {
+      "type": "phrase",
+      "en": "The heater isn't working.",
+      "ja": "暖房が動きません",
+      "note": "設備がこわれたとき"
+    },
+    {
+      "type": "phrase",
+      "en": "I'm locked out of my room.",
+      "ja": "部屋から閉め出されました",
+      "note": "カギを忘れたとき"
+    },
+    {
+      "type": "phrase",
+      "en": "Who should I talk to about this?",
+      "ja": "これは誰に相談すればいいですか？",
+      "note": "相談先を聞く"
+    },
+    {
+      "type": "phrase",
+      "en": "When can someone fix it?",
+      "ja": "いつ直してもらえますか？",
+      "note": "修理の予定を聞く"
+    },
+    {
+      "type": "cta"
+    }
+  ],
+  "story": false
+}

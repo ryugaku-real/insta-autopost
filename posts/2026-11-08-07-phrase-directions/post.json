@@ -1,0 +1,41 @@
+{
+  "draft": false,
+  "publish_at": "2026-11-08 07:00+09:00",
+  "caption": "道をたずねる英語フレーズ🗺️\nキャンパスや街で迷ったときに使えるよ。\n.\n.\n#英会話 #英語フレーズ #英語学習 #アメリカ留学 #留学準備 #留学生 #海外留学 #日常英会話 #英語勉強 #留学生活",
+  "slides": [
+    {
+      "type": "cover",
+      "label": "保存推奨",
+      "title": "道を\nたずねる\n英語フレーズ",
+      "sub": "迷ったときに"
+    },
+    {
+      "type": "phrase",
+      "en": "Excuse me, how do I get to the library?",
+      "ja": "すみません、図書館へはどう行けばいいですか？",
+      "note": "場所を聞く"
+    },
+    {
+      "type": "phrase",
+      "en": "Is it far from here?",
+      "ja": "ここから遠いですか？",
+      "note": "距離を聞く"
+    },
+    {
+      "type": "phrase",
+      "en": "Could you show me on the map?",
+      "ja": "地図で教えてもらえますか？",
+      "note": "わかりやすく聞く"
+    },
+    {
+      "type": "phrase",
+      "en": "I think I'm lost.",
+      "ja": "迷ってしまったみたいです",
+      "note": "助けをもとめる"
+    },
+    {
+      "type": "cta"
+    }
+  ],
+  "story": false
+}

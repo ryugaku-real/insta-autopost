@@ -1,0 +1,41 @@
+{
+  "draft": false,
+  "publish_at": "2026-11-06 07:00+09:00",
+  "caption": "薬局で使える英語フレーズ💊\n薬の飲み方や体調のことは、薬剤師さんや学校の保健センターに必ず相談してね。\n.\n.\n#英会話 #英語フレーズ #英語学習 #アメリカ留学 #留学準備 #留学生 #海外留学 #日常英会話 #英語勉強 #留学生活",
+  "slides": [
+    {
+      "type": "cover",
+      "label": "保存推奨",
+      "title": "薬局で\n使える\n英語フレーズ",
+      "sub": "体調が悪いときに"
+    },
+    {
+      "type": "phrase",
+      "en": "Where can I find cold medicine?",
+      "ja": "風邪薬はどこにありますか？",
+      "note": "薬を探すとき"
+    },
+    {
+      "type": "phrase",
+      "en": "Do I need a prescription?",
+      "ja": "処方箋は必要ですか？",
+      "note": "買えるか確認"
+    },
+    {
+      "type": "phrase",
+      "en": "How often should I take this?",
+      "ja": "どのくらいの間隔で飲めばいいですか？",
+      "note": "飲み方を聞く"
+    },
+    {
+      "type": "phrase",
+      "en": "I'm allergic to this.",
+      "ja": "これにアレルギーがあります",
+      "note": "大事なことを伝える"
+    },
+    {
+      "type": "cta"
+    }
+  ],
+  "story": false
+}
