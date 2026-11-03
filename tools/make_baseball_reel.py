@@ -373,7 +373,7 @@ def main() -> int:
     out = ROOT / "posts" / FOLDER / "reel.mp4"
     cmd = ["ffmpeg", "-y", "-loglevel", "error", "-f", "rawvideo", "-pix_fmt", "rgb24", "-s", f"{W}x{H}",
            "-r", str(FPS), "-i", "-", "-i", str(VOICE),
-           "-map", "0:v", "-map", "1:a", "-af", f"afade=t=out:st={DUR - 0.8}:d=0.8",
+           "-map", "0:v", "-map", "1:a", "-af", f"afade=t=out:st={DUR - 0.3}:d=0.3",
            "-c:v", "libx264", "-preset", "medium", "-crf", "20", "-pix_fmt", "yuv420p",
            "-c:a", "aac", "-b:a", "160k", "-t", str(DUR), "-movflags", "+faststart", str(out)]
     p = subprocess.Popen(cmd, stdin=subprocess.PIPE)
