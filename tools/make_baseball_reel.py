@@ -5,7 +5,7 @@
   python tools/make_baseball_reel.py --stills 3 9 12 20 30 37
                                                     指定した秒の静止画だけ /tmp に出す（確認用）
 
-動画の仕様: 1080x1920 / 30fps / H.264 / 音声なし / 約38秒
+動画の仕様: 1080x1920 / 30fps / H.264 / 声（voice.mp3）入り / 約34秒
 上の約250px・下の約380pxはインスタのUIで隠れるので、文字は置かない。
 """
 from __future__ import annotations
@@ -22,7 +22,7 @@ sys.path.insert(0, str(ROOT / "scripts"))
 import render as R  # noqa: E402  フォントと色を共有する
 
 FOLDER = "2026-11-13-07-us-japan-baseball"
-W, H, FPS, DUR = 1080, 1920, 30, 38.0
+W, H, FPS, DUR = 1080, 1920, 30, 34.0
 
 NAVY, RED, CREAM, WHITE, SOFT = R.NAVY, R.RED, R.CREAM, R.WHITE, R.SOFT
 INK = (28, 36, 66)        # 文字
@@ -53,17 +53,32 @@ def back(x):  # 少し行き過ぎて戻る（ポンと出る動き）
     return 1 + (c + 1) * (x - 1) ** 3 + c * (x - 1) ** 2
 
 
-def build_bg():
-    """ゆっくり流れるドット背景の元画像（縦に80pxごとに繰り返す）"""
-    im = Image.new("RGBA", (W, H + 80), CREAM + (255,))
-    d = ImageDraw.Draw(im)
-    for y in range(0, H + 80, 80):
-        for x in range(0, W + 80, 80):
-            d.ellipse((x - 3, y - 3, x + 3, y + 3), fill=(226, 220, 205, 255))
-    return im
+PHOTO = ROOT / "assets" / "reel-bg-photo.jpg"
+VOICE = ROOT / "posts" / FOLDER / "voice.mp3"
+PAD_W, PAD_H = 1242, 2208   # 少し大きく作って、ゆっくり動かす（パン）
 
 
-BG = build_bg()
+def build_bg(overlay: float) -> Image.Image:
+    """写真を縦長に拡大してぼかし、生成り色を overlay の濃さでかぶせる"""
+    from PIL import ImageFilter
+    im = Image.open(PHOTO).convert("RGB")
+    sc = max(PAD_W / im.width, PAD_H / im.height)
+    im = im.resize((int(im.width * sc) + 1, int(im.height * sc) + 1), Image.LANCZOS)
+    x, y = (im.width - PAD_W) // 2, (im.height - PAD_H) // 2
+    im = im.crop((x, y, x + PAD_W, y + PAD_H)).filter(ImageFilter.GaussianBlur(4))
+    return Image.blend(im, Image.new("RGB", im.size, CREAM), overlay).convert("RGBA")
+
+
+BG_PHOTO = build_bg(0.55)   # 冒頭: 写真をしっかり見せる
+BG_CLEAN = build_bg(0.86)   # 図の場面: 図が読みやすいよう淡く
+
+
+def bg_frame(treal: float, tn: float) -> Image.Image:
+    ox = int(60 + 50 * math.sin(treal * 0.35))
+    oy = int(100 + treal * 6)
+    box = (ox, oy, ox + W, oy + H)
+    w = clamp((tn - 3.6) / 1.0)   # 日本の場面に入るころ、写真を淡くする
+    return Image.blend(BG_PHOTO.crop(box), BG_CLEAN.crop(box), w)
 
 
 def show(img, t, s, e, box, fn, dur=0.5, dy=44, pop=False):
@@ -178,12 +193,13 @@ def mover_pos(t):
     return (SLOTS[3] + bump, ROW1 + (ROW2 - ROW1) * p), (SLOTS[3] - bump, ROW2 + (ROW1 - ROW2) * p)
 
 
-def frame(t: float) -> Image.Image:
-    img = BG.crop((0, int(t * 14) % 80, W, int(t * 14) % 80 + H))
+def frame_nom(t: float, treal: float) -> Image.Image:
+    img = bg_frame(treal, t)
     bob = lambda i: 5 * math.sin(3.0 * t + i * 1.3)   # 駒のゆらゆら
 
     # ---- 1) フック 0 – 4.2
     show(img, t, 0.0, 4.0, (420, 330, 660, 600), lambda d: ball(d, 540, 490 - abs(math.sin(t * 3.2)) * 50, 56), dy=0)
+    show(img, t, 0.0, 4.0, (40, 560, 1040, 1340), lambda d: rrect(d, (50, 570, 1030, 1320), 48, (255, 255, 255, 215)), dy=0)
     show(img, t, 0.2, 4.0, (0, 600, W, 840), lambda d: (
         text(d, (540, 690), "日本は落ちる", 134, INK), en(d, (540, 790), "Japan: teams can be relegated", 42)), pop=True)
     show(img, t, 1.5, 4.0, (0, 860, W, 1130), lambda d: (
@@ -199,8 +215,8 @@ def frame(t: float) -> Image.Image:
     show(img, t, A + 0.1, B, (0, 260, W, 390), lambda d: title_pill(d, 540, 325, "日本", "JAPAN", flag_jp))
     show(img, t, A + 0.5, B, (70, 400, 1010, 1280), lambda d: (
         rrect(d, (90, 420, 990, 1260), 40, PANEL, LINE, 4),
-        text(d, (540, 470), "リーグ（東都・阪神など）", 44, MUTED),
-        en(d, (540, 518), "League (Toto, Hanshin, etc.)", 30)))
+        text(d, (540, 462), "リーグ（東都・阪神など）", 44, MUTED),
+        en(d, (540, 504), "League (Toto, Hanshin, etc.)", 28)))
     show(img, t, A + 1.2, B, (130, 540, 950, 790), lambda d: (
         rrect(d, (150, 560, 930, 780), 28, PANEL2),
         text(d, (225, 600), "1部", 44, GOLD), en(d, (400, 603), "1st Division", 30),
@@ -218,7 +234,7 @@ def frame(t: float) -> Image.Image:
         pill(d, dx, dy + 110, "降格" if done else "最下位", RED, size=32)
         en(d, (dx, dy + 160), "Relegated" if done else "Last place", 26, RED)
         pill(d, ex, ey - 70, "昇格" if done else "2部1位", GREEN, size=32)
-        en(d, (ex, ey - 118), "Promoted" if done else "2nd Div. champ", 26, GREEN)
+        en(d, (ex, ey - 112), "Promoted" if done else "2nd Div. champ", 24, GREEN)
     show(img, t, A + 2.4, B, (60, 500, 1040, 1215), movers, dy=0)
     show(img, t, A + 4.6, B, (30, 790, 700, 940), lambda d: (
         pill(d, 300, 840, "入れ替え戦", GOLD, (30, 30, 40), 40), en(d, (300, 905), "Playoff", 30)), pop=True)
@@ -256,7 +272,7 @@ def frame(t: float) -> Image.Image:
         text(d, (540, 1412), "階層の中にリーグがある", 64, INK), en(d, (540, 1468), "Leagues live inside the tiers", 36)))
 
     # ---- 4) まとめ 28.2 – 34.4
-    A, B = 28.2, 34.2
+    A, B = 28.2, 99.0
     def jp_card(d):
         title_pill(d, 285, 540, "日本", "JAPAN", flag_jp, size=34)
         rrect(d, (70, 610, 500, 1060), 30, PANEL, LINE, 4)
@@ -288,16 +304,31 @@ def frame(t: float) -> Image.Image:
     show(img, t, A + 3.0, B, (0, 1250, W, 1470), lambda d: (
         text(d, (540, 1320), "縦と横が逆", 130, GOLD), en(d, (540, 1415), "Opposite structures: vertical vs horizontal", 36)), pop=True)
 
-    # ---- 5) 締め 34.4 – 38
-    A, B = 34.4, 99.0
-    show(img, t, A, B, (420, 470, 660, 740), lambda d: ball(d, 540, 630 - abs(math.sin((t - A) * 3.2)) * 50, 56), dy=0)
-    show(img, t, A + 0.2, B, (0, 760, W, 960), lambda d: (
-        text(d, (540, 820), "保存してね", 120, INK), en(d, (540, 915), "Save this for later", 44)), pop=True)
-    show(img, t, A + 0.7, B, (0, 990, W, 1110), lambda d: (
-        text(d, (540, 1030), "アメリカ留学のリアルを毎日発信中", 42, MUTED, False),
-        en(d, (540, 1076), "Real life studying in the USA, every day", 30)))
-    show(img, t, A + 1.1, B, (0, 1120, W, 1240), lambda d: pill(d, 540, 1180, "@ryugaku_real_usa", RED, size=44))
     return img
+
+
+# 声に合わせた時間変換: (実際の秒, 図を作ったときの秒) の対応表。間は直線でつなぐ
+ANCHORS = [
+    (0.0, 0.0), (0.3, 0.2), (3.3, 1.5), (4.4, 2.7), (5.7, 4.0),                       # 冒頭
+    (5.9, 4.1), (6.4, 4.5), (8.3, 5.2), (8.8, 5.7), (9.0, 6.4), (10.1, 8.6),            # 日本
+    (10.3, 9.0), (10.5, 9.6), (12.0, 11.6), (12.2, 12.0), (12.9, 12.8), (14.2, 15.4),
+    (14.4, 15.5), (14.9, 16.0), (15.6, 16.5), (16.2, 17.0), (18.2, 18.2), (18.5, 18.55),  # アメリカ
+    (18.8, 18.9), (19.2, 19.4), (20.9, 20.4), (21.3, 20.8), (22.4, 22.6), (24.3, 28.2),
+    (25.3, 28.3), (28.3, 29.6), (31.1, 31.2), (34.0, 33.0),                              # まとめ
+]
+
+
+def nominal(t: float) -> float:
+    if t <= ANCHORS[0][0]:
+        return ANCHORS[0][1]
+    for (r0, n0), (r1, n1) in zip(ANCHORS, ANCHORS[1:]):
+        if t <= r1:
+            return n0 + (n1 - n0) * (t - r0) / (r1 - r0)
+    return ANCHORS[-1][1]
+
+
+def frame(t: float) -> Image.Image:
+    return frame_nom(nominal(t), t)
 
 
 def main() -> int:
@@ -309,8 +340,10 @@ def main() -> int:
         return 0
     out = ROOT / "posts" / FOLDER / "reel.mp4"
     cmd = ["ffmpeg", "-y", "-loglevel", "error", "-f", "rawvideo", "-pix_fmt", "rgb24", "-s", f"{W}x{H}",
-           "-r", str(FPS), "-i", "-", "-c:v", "libx264", "-preset", "medium", "-crf", "20",
-           "-pix_fmt", "yuv420p", "-movflags", "+faststart", str(out)]
+           "-r", str(FPS), "-i", "-", "-i", str(VOICE),
+           "-map", "0:v", "-map", "1:a", "-af", f"afade=t=out:st={DUR - 0.8}:d=0.8",
+           "-c:v", "libx264", "-preset", "medium", "-crf", "20", "-pix_fmt", "yuv420p",
+           "-c:a", "aac", "-b:a", "160k", "-t", str(DUR), "-movflags", "+faststart", str(out)]
     p = subprocess.Popen(cmd, stdin=subprocess.PIPE)
     n = int(DUR * FPS)
     for i in range(n):
