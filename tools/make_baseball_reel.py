@@ -255,15 +255,15 @@ def frame_nom(t: float, treal: float) -> Image.Image:
         rrect(d, (90, 910, 990, 1030), 36, PANEL, LINE, 4), text(d, (540, 970), "Division II", 50, INK)))
     show(img, t, A + 1.6, B, (70, 1065, 1010, 1220), lambda d: (
         rrect(d, (90, 1080, 990, 1200), 36, PANEL, LINE, 4), text(d, (540, 1140), "Division III", 50, INK)))
-    for i, (x, n) in enumerate(zip((255, 540, 825), ("SEC", "ACC", "Big 12"))):
+    for i, (x, n) in enumerate(zip((255, 540, 825), ("Conference A", "Conference B", "Conference C"))):
         show(img, t, A + 2.8 + 0.35 * i, B, (x - 140, 550, x + 140, 720),
-             lambda d, x=x, n=n, i=i: chip(d, x, 635 + bob(i), n, w=250, h=110, size=50), pop=True)
+             lambda d, x=x, n=n, i=i: chip(d, x, 635 + bob(i), n, w=250, h=110, size=34), pop=True)
     show(img, t, A + 4.0, B, (0, 745, W, 845), lambda d: (
         text(d, (540, 775), "その中に Conference（リーグ）", 38, MUTED, False),
         en(d, (540, 820), "Conferences sit inside the division", 30)))
     for yy in (885, 1055):
-        show(img, t, A + 5.0, B, (380, yy - 40, 960, yy + 40), lambda d, yy=yy: (
-            xmark(d, 440, yy), text(d, (590, yy), "行き来なし", 32, RED), en(d, (790, yy), "No movement", 30, RED)), pop=True)
+        show(img, t, A + 5.0, B, (380, yy - 40, 1010, yy + 40), lambda d, yy=yy: (
+            xmark(d, 440, yy), text(d, (610, yy), "成績では動かない", 32, RED), en(d, (860, yy), "Not by results", 28, RED)), pop=True)
     show(img, t, A + 5.4, B, (0, 1235, W, 1360), lambda d: (
         text(d, (540, 1268), "競技力ではDivisionは入れ替わらない", 46, RED),
         en(d, (540, 1322), "Divisions aren't swapped by performance", 32, RED)))
@@ -288,14 +288,12 @@ def frame_nom(t: float, treal: float) -> Image.Image:
         title_pill(d, 795, 540, "アメリカ", "USA", flag_us, size=34)
         rrect(d, (580, 610, 1010, 800), 30, PANEL, GOLD, 5)
         text(d, (795, 648), "Division I", 36, GOLD)
-        for i, (cx, n) in enumerate(zip((655, 795, 935), ("SEC", "ACC", "Big 12"))):
-            chip(d, cx, 735 + bob(i), n, w=125, h=80, size=28)
+        for i, (cx, n) in enumerate(zip((655, 795, 935), ("Conference A", "Conference B", "Conference C"))):
+            chip(d, cx, 735 + bob(i), n.replace('Conference ', 'Conf. '), w=125, h=80, size=24)
         rrect(d, (580, 835, 1010, 930), 26, PANEL, LINE, 4)
         text(d, (795, 882), "Division II", 38, INK)
         rrect(d, (580, 965, 1010, 1060), 26, PANEL, LINE, 4)
         text(d, (795, 1012), "Division III", 38, INK)
-        xmark(d, 795, 817, 14)
-        xmark(d, 795, 947, 14)
         text(d, (795, 1115), "階層 ＞ リーグ", 40, INK)
         en(d, (795, 1165), "Division > Conference", 32)
     show(img, t, A + 0.1, B, (40, 500, 540, 1210), jp_card)
