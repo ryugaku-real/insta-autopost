@@ -37,9 +37,6 @@
       "no": 3,
       "head": "ひとことで言うと",
       "body": "日本は「リーグ ＞ 1部・2部」。アメリカは「Division ＞ Conference」。縦と横が逆です。\n※東京六大学のように入れ替えのないリーグもあります。"
-    },
-    {
-      "type": "cta"
     }
   ],
   "images": [
@@ -47,8 +44,9 @@
     "02.jpg",
     "03.jpg",
     "04.jpg",
-    "05.jpg",
-    "06.jpg"
+    "05.jpg"
   ],
-  "render_v": 2
+  "render_v": 2,
+  "handle": "@ippei.hashimoto",
+  "brand": ""
 }

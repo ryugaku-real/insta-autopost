@@ -24,8 +24,16 @@ from PIL import Image, ImageDraw, ImageFont
 
 ROOT = Path(__file__).resolve().parent.parent
 POSTS = ROOT / "posts"
-HANDLE = "@ryugaku_real_usa"
-BRAND = "アメリカ留学のリアル"
+DEFAULT_HANDLE = "@ryugaku_real_usa"
+DEFAULT_BRAND = "アメリカ留学のリアル"
+HANDLE, BRAND = DEFAULT_HANDLE, DEFAULT_BRAND
+
+
+def use_identity(post: dict) -> None:
+    """post.json に "handle" / "brand" があれば、その投稿だけ別アカウントの表記にする"""
+    global HANDLE, BRAND
+    HANDLE = post.get("handle", DEFAULT_HANDLE)
+    BRAND = post.get("brand", DEFAULT_BRAND)
 
 W, H = 1080, 1350
 NAVY = (20, 33, 61)
@@ -361,6 +369,7 @@ def main() -> int:
         print(f"作る必要がある投稿: {len(todo)}（ストーリーズ画像: {len(set(stories))}）")
         return 1 if (todo or stories) else 0
     for pj, p, names in todo:
+        use_identity(p)
         slides = p["slides"]
         for i, s in enumerate(slides, 1):
             kind = s.get("type", "point")
@@ -373,6 +382,7 @@ def main() -> int:
         print(f"作成: {pj.parent.name}（{len(names)}枚）")
         make_story(pj.parent)
     for folder in story_targets(force):
+        use_identity(json.loads((folder / "post.json").read_text(encoding="utf-8")))
         make_story(folder)
         print(f"ストーリーズ画像: {folder.name}")
     return 0

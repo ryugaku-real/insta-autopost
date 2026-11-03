@@ -22,7 +22,7 @@ sys.path.insert(0, str(ROOT / "scripts"))
 import render as R  # noqa: E402  フォントと色を共有する
 
 FOLDER = "2026-11-13-07-us-japan-baseball"
-W, H, FPS, DUR = 1080, 1920, 30, 36.3
+W, H, FPS, DUR = 1080, 1920, 30, 38.6
 
 NAVY, RED, CREAM, WHITE, SOFT = R.NAVY, R.RED, R.CREAM, R.WHITE, R.SOFT
 INK = (28, 36, 66)        # 文字
@@ -271,7 +271,7 @@ def frame_nom(t: float, treal: float) -> Image.Image:
         text(d, (540, 1412), "階層の中にリーグがある", 64, INK), en(d, (540, 1468), "Leagues live inside the tiers", 36)))
 
     # ---- 4) まとめ 28.2 – 34.4
-    A, B = 28.2, 99.0
+    A, B = 28.2, 34.2
     def jp_card(d):
         title_pill(d, 285, 540, "日本", "JAPAN", flag_jp, size=34)
         rrect(d, (70, 610, 500, 1060), 30, PANEL, LINE, 4)
@@ -301,6 +301,12 @@ def frame_nom(t: float, treal: float) -> Image.Image:
     show(img, t, A + 3.0, B, (0, 1250, W, 1470), lambda d: (
         text(d, (540, 1320), "縦と横が逆", 130, GOLD), en(d, (540, 1415), "Opposite structures: vertical vs horizontal", 36)), pop=True)
 
+    # ---- 5) 締め（声なし）34.4 –
+    A, B = 34.4, 99.0
+    show(img, t, A, B, (420, 480, 660, 750), lambda d: ball(d, 540, 610 - abs(math.sin((t - A) * 3.2)) * 50, 56), dy=0)
+    show(img, t, A + 0.2, B, (0, 800, W, 1040), lambda d: (
+        text(d, (540, 880), "フォローして", 110, INK), en(d, (540, 985), "Follow for more", 44)), pop=True)
+    show(img, t, A + 0.7, B, (0, 1080, W, 1200), lambda d: pill(d, 540, 1140, "@ippei.hashimoto", RED, size=46), pop=True)
     return img
 
 
@@ -338,7 +344,9 @@ ANCHORS = [
     (27.5, 28.3),
     (30.5, 29.6),
     (33.3, 31.2),
-    (36.3, 32.6),
+    (35.5, 34.2),
+    (35.7, 34.4),
+    (38.6, 36.4),
 ]
 
 
