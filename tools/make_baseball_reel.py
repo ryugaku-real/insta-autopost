@@ -5,7 +5,7 @@
   python tools/make_baseball_reel.py --stills 3 9 12 20 30 37
                                                     指定した秒の静止画だけ /tmp に出す（確認用）
 
-動画の仕様: 1080x1920 / 30fps / H.264 / 声（voice.mp3）入り / 約42秒
+動画の仕様: 1080x1920 / 30fps / H.264 / 声（voice.mp3）入り / 約37秒
 上の約250px・下の約380pxはインスタのUIで隠れるので、文字は置かない。
 """
 from __future__ import annotations
@@ -22,7 +22,7 @@ sys.path.insert(0, str(ROOT / "scripts"))
 import render as R  # noqa: E402  フォントと色を共有する
 
 FOLDER = "2026-11-13-07-us-japan-baseball"
-W, H, FPS, DUR = 1080, 1920, 30, 42.4
+W, H, FPS, DUR = 1080, 1920, 30, 36.6
 
 NAVY, RED, CREAM, WHITE, SOFT = R.NAVY, R.RED, R.CREAM, R.WHITE, R.SOFT
 INK = (28, 36, 66)        # 文字
@@ -271,7 +271,7 @@ def frame_nom(t: float, treal: float) -> Image.Image:
         text(d, (540, 1412), "階層の中にリーグがある", 64, INK), en(d, (540, 1468), "Leagues live inside the tiers", 36)))
 
     # ---- 4) まとめ 28.2 – 34.4
-    A, B = 28.2, 34.2
+    A, B = 28.2, 99.0
     def jp_card(d):
         title_pill(d, 285, 540, "日本", "JAPAN", flag_jp, size=34)
         rrect(d, (70, 610, 500, 1060), 30, PANEL, LINE, 4)
@@ -303,17 +303,6 @@ def frame_nom(t: float, treal: float) -> Image.Image:
     show(img, t, A + 3.0, B, (0, 1250, W, 1470), lambda d: (
         text(d, (540, 1320), "縦と横が逆", 130, GOLD), en(d, (540, 1415), "Opposite structures: vertical vs horizontal", 36)), pop=True)
 
-    # ---- 5) 次回予告 34.4 –
-    A, B = 34.4, 99.0
-    show(img, t, A, B, (420, 400, 660, 690), lambda d: ball(d, 540, 520 - abs(math.sin((t - A) * 3.2)) * 50, 56), dy=0)
-    show(img, t, A + 0.1, B, (0, 640, W, 760), lambda d: pill(d, 540, 700, "次回予告  NEXT", RED, size=40), pop=True)
-    show(img, t, A + 0.2, B, (0, 790, W, 1160), lambda d: (
-        text(d, (540, 870), "奨学金は", 112, INK), text(d, (540, 1000), "どう違う？", 112, INK),
-        en(d, (540, 1105), "How do scholarships differ?", 42)), pop=True)
-    show(img, t, A + 0.9, B, (0, 1190, W, 1330), lambda d: (
-        text(d, (540, 1235), "答えは次の動画で", 48, MUTED, False), en(d, (540, 1290), "The answer is in the next video", 32)))
-    show(img, t, A + 1.6, B, (0, 1360, W, 1500), lambda d: (
-        pill(d, 540, 1410, "フォローして続きをチェック", RED, size=40), en(d, (540, 1475), "Follow so you don't miss it", 32)), pop=True)
     return img
 
 
@@ -324,8 +313,8 @@ ANCHORS = [
     (12.8, 9.0), (13.0, 9.6), (14.5, 11.6), (14.7, 12.0), (15.4, 12.8), (16.7, 15.4),
     (16.9, 15.5), (17.4, 16.0), (18.1, 16.5), (18.7, 17.0), (20.7, 18.2), (21.0, 18.55),  # アメリカ
     (21.3, 18.9), (21.7, 19.4), (23.4, 20.4), (23.8, 20.8), (24.9, 22.6), (26.8, 28.2),
-    (27.8, 28.3), (30.8, 29.6), (33.6, 31.2), (35.6, 34.2),                              # まとめ
-    (35.8, 34.4), (36.1, 34.6), (38.8, 35.3), (40.4, 36.0), (42.4, 36.9),                # 次回予告
+    (27.8, 28.3), (30.8, 29.6), (33.6, 31.2),                              # まとめ
+    (36.6, 32.6),
 ]
 
 
