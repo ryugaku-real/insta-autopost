@@ -130,7 +130,7 @@ def frame(t: float) -> Image.Image:
     show(img, t, A + 0.1, B, (0, 270, W, 380), lambda d: pill(d, 540, 325, "日本", RED))
     show(img, t, A + 0.5, B, (70, 400, 1010, 1280), lambda d: (
         rrect(d, (90, 420, 990, 1260), 40, PANEL, SOFT, 4),
-        text(d, (540, 480), "リーグ（東都・関西など）", 46, SOFT)))
+        text(d, (540, 480), "リーグ（東都・阪神など）", 46, SOFT)))
     show(img, t, A + 1.2, B, (130, 540, 950, 780), lambda d: (
         rrect(d, (150, 560, 930, 780), 28, PANEL2),
         text(d, (230, 600), "1部", 44, GOLD),
@@ -167,7 +167,7 @@ def frame(t: float) -> Image.Image:
         show(img, t, A + 2.8 + 0.35 * i, B, (x - 140, 560, x + 140, 720),
              lambda d, x=x, n=n: chip(d, x, 640, n, w=250, h=110, size=50), pop=True)
     show(img, t, A + 4.0, B, (0, 770, W, 860), lambda d: text(d, (540, 815), "その中に Conference（リーグ）", 40, SOFT, False))
-    show(img, t, A + 5.2, B, (0, 1330, W, 1420), lambda d: text(d, (540, 1375), "成績ではDivisionは変わらない", 52, RED))
+    show(img, t, A + 5.2, B, (0, 1330, W, 1420), lambda d: text(d, (540, 1375), "競技力ではDivisionは入れ替わらない", 48, RED))
     show(img, t, A + 7.2, B, (0, 1430, W, 1520), lambda d: text(d, (540, 1475), "階層の中にリーグがある", 66, WHITE))
 
     # ---- 4) まとめ 28.2 – 34.4
