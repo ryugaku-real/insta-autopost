@@ -418,7 +418,7 @@ def main() -> int:
         return 0
     out = ROOT / "posts" / FOLDER / "reel.mp4"
     track = Path(tempfile.mkdtemp()) / "sfx_bgm.wav"
-    make_track(DUR, sfx_events(), str(track))
+    make_track(DUR, sfx_events(), str(track), bgm_gain=0.6, sfx_gain=1.0)
     mix = ("[1:a]aformat=sample_rates=44100:channel_layouts=mono[v];"
            "[2:a]aformat=sample_rates=44100:channel_layouts=mono[m];"
            "[v][m]amix=inputs=2:normalize=0:duration=longest,"

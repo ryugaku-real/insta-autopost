@@ -12,6 +12,8 @@ import numpy as np
 
 SR = 44100
 RNG = np.random.default_rng(7)   # 毎回同じ音になるように固定
+# 効果音ごとのピーク音量（dBFS）。声（約 -4 dB）より十分小さくして、声の邪魔をしない
+SFX_PEAK_DB = {"pop": -24.0, "ding": -26.0, "thud": -20.0, "click": -30.0, "whoosh": -30.0}
 
 
 def _t(sec: float) -> np.ndarray:
@@ -107,7 +109,10 @@ def make_track(duration: float, events: dict[str, list[float]], path: str, bgm_g
                sfx_gain: float = 1.0) -> None:
     out = bgm(duration) * bgm_gain
     makers = {"pop": pop, "ding": ding, "thud": thud, "click": click, "whoosh": whoosh}
-    cache = {k: f() for k, f in makers.items()}
+    cache = {}
+    for k, f in makers.items():
+        sig = f()
+        cache[k] = sig / (float(np.max(np.abs(sig))) or 1.0) * 10 ** (SFX_PEAK_DB[k] / 20)
     for kind, times in events.items():
         for sec in times:
             _add(out, int(max(0.0, sec) * SR), cache[kind], sfx_gain)
