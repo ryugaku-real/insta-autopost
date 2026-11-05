@@ -22,7 +22,7 @@ sys.path.insert(0, str(ROOT / "scripts"))
 import render as R  # noqa: E402  フォントと色を共有する
 
 FOLDER = "2026-11-13-07-us-japan-baseball"
-W, H, FPS, DUR = 1080, 1920, 30, 38.6
+W, H, FPS, DUR = 1080, 1920, 30, 41.75
 
 NAVY, RED, CREAM, WHITE, SOFT = R.NAVY, R.RED, R.CREAM, R.WHITE, R.SOFT
 INK = (28, 36, 66)        # 文字
@@ -264,9 +264,12 @@ def frame_nom(t: float, treal: float) -> Image.Image:
     for yy in (885, 1055):
         show(img, t, A + 5.0, B, (380, yy - 40, 1010, yy + 40), lambda d, yy=yy: (
             xmark(d, 440, yy), text(d, (610, yy), "成績では動かない", 32, RED), en(d, (860, yy), "Not by results", 28, RED)), pop=True)
-    show(img, t, A + 5.4, B, (0, 1235, W, 1360), lambda d: (
+    show(img, t, A + 5.4, 23.2, (0, 1235, W, 1360), lambda d: (
         text(d, (540, 1268), "競技力ではDivisionは入れ替わらない", 46, RED),
         en(d, (540, 1322), "Divisions aren't swapped by performance", 32, RED)))
+    show(img, t, 23.4, B, (0, 1235, W, 1360), lambda d: (
+        text(d, (540, 1268), "Conferenceが変わってもDivisionは変わらない", 40, RED),
+        en(d, (540, 1322), "Changing conferences doesn't change the division", 30, RED)), pop=True)
     show(img, t, A + 7.2, B, (0, 1375, W, 1500), lambda d: (
         text(d, (540, 1412), "階層の中にリーグがある", 64, INK), en(d, (540, 1468), "Leagues live inside the tiers", 36)))
 
@@ -340,13 +343,14 @@ ANCHORS = [
     (23.1, 20.4),
     (23.5, 20.8),
     (24.6, 22.6),
-    (26.5, 28.2),
-    (27.5, 28.3),
-    (30.5, 29.6),
-    (33.3, 31.2),
-    (35.5, 34.2),
-    (35.7, 34.4),
-    (38.6, 36.4),
+    (26.1, 23.4),
+    (29.65, 28.2),
+    (30.65, 28.3),
+    (33.65, 29.6),
+    (36.45, 31.2),
+    (38.65, 34.2),
+    (38.85, 34.4),
+    (41.75, 36.4),
 ]
 
 
