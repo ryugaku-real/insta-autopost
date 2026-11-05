@@ -13,6 +13,7 @@ from __future__ import annotations
 import math
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 from PIL import Image, ImageDraw
@@ -20,6 +21,7 @@ from PIL import Image, ImageDraw
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "scripts"))
 import render as R  # noqa: E402  フォントと色を共有する
+from reel_audio import make_track  # noqa: E402  効果音とBGM
 
 FOLDER = "2026-11-13-07-us-japan-baseball"
 W, H, FPS, DUR = 1080, 1920, 30, 41.75
@@ -113,9 +115,13 @@ def pill(d, cx, cy, s, bg, fg=WHITE, size=44):
     text(d, (cx, cy), s, size, fg)
 
 
-def chip(d, cx, cy, label, fill=PANEL2, outline=None, w=170, h=100, size=46):
+def chip(d, cx, cy, label, fill=PANEL2, outline=None, w=170, h=100, size=46, sub=None):
     rrect(d, (cx - w / 2, cy - h / 2, cx + w / 2, cy + h / 2), 24, fill, outline, 6 if outline else 0)
-    text(d, (cx, cy), label, size, INK)
+    if sub:
+        text(d, (cx, cy - 16), label, int(size * 0.85), INK)
+        text(d, (cx, cy + 22), sub, 26, MUTED, False)
+    else:
+        text(d, (cx, cy), label, size, INK)
 
 
 def arrow(d, cx, cy, up, color, h=80, w=46, shaft=18):
@@ -183,6 +189,13 @@ def en(d, xy, s, size=34, fill=MUTED):
 SLOTS = [245, 415, 585, 755]
 CW = 150   # 駒の幅
 ROW1, ROW2 = 660, 1040
+# 例としての成績（架空）。シーズンが進むにつれて数字が増えていく
+REC = {"A": (9, 1), "B": (7, 3), "C": (5, 5), "D": (1, 9), "E": (9, 1), "F": (6, 4), "G": (5, 5), "H": (3, 7)}
+
+
+def rec(name: str, p: float) -> str:
+    w, l = REC[name]
+    return f"{round(w * p)}勝{round(l * p)}敗"
 MOVE_S, MOVE_E = 9.6, 11.6
 
 
@@ -196,6 +209,7 @@ def mover_pos(t):
 def frame_nom(t: float, treal: float) -> Image.Image:
     img = bg_frame(treal, t)
     bob = lambda i: 5 * math.sin(3.0 * t + i * 1.3)   # 駒のゆらゆら
+    p = ease_io(clamp((t - 5.4) / 3.0))               # シーズンの進み具合（0→1）
 
     # ---- 1) フック 0 – 4.2
     show(img, t, 0.0, 4.0, (420, 330, 660, 600), lambda d: ball(d, 540, 490 - abs(math.sin(t * 3.2)) * 50, 56), dy=0)
@@ -219,26 +233,27 @@ def frame_nom(t: float, treal: float) -> Image.Image:
     show(img, t, A + 1.2, B, (130, 540, 950, 790), lambda d: (
         rrect(d, (150, 560, 930, 780), 28, PANEL2),
         text(d, (225, 600), "1部", 44, GOLD), en(d, (400, 603), "1st Division", 30),
-        [chip(d, x, ROW1 + 20 + bob(i), n, w=CW) for i, (x, n) in enumerate(zip(SLOTS[:3], "ABC"))]))
+        [chip(d, x, ROW1 + 20 + bob(i), n, w=CW, sub=rec(n, p)) for i, (x, n) in enumerate(zip(SLOTS[:3], "ABC"))]))
     show(img, t, A + 1.7, B, (130, 920, 950, 1170), lambda d: (
         rrect(d, (150, 940, 930, 1160), 28, PANEL2),
         text(d, (225, 980), "2部", 44, GOLD), en(d, (400, 983), "2nd Division", 30),
-        [chip(d, x, ROW2 + 20 + bob(i + 3), n, w=CW) for i, (x, n) in enumerate(zip(SLOTS[:3], "FGH"))]))
+        [chip(d, x, ROW2 + 20 + bob(i + 3), n, w=CW, sub=rec(n, p)) for i, (x, n) in enumerate(zip(SLOTS[:3], "FGH"))]))
 
     def movers(d):
         (dx, dy), (ex, ey) = mover_pos(t)
         done = t >= MOVE_E
-        chip(d, dx, dy + 20, "D", outline=RED, w=CW)
-        chip(d, ex, ey + 20, "E", outline=GREEN, w=CW)
-        pill(d, dx, dy + 110, "降格" if done else "最下位", RED, size=32)
-        en(d, (dx, dy + 160), "Relegated" if done else "Last place", 26, RED)
-        pill(d, ex, ey - 70, "昇格" if done else "2部1位", GREEN, size=32)
-        en(d, (ex, ey - 112), "Promoted" if done else "2nd Div. champ", 24, GREEN)
+        chip(d, dx, dy + 20, "D", outline=RED, w=CW, sub=rec("D", p))
+        chip(d, ex, ey + 20, "E", outline=GREEN, w=CW, sub=rec("E", p))
+        if not (MOVE_S < t < MOVE_E):   # 動いている間は、補足の文字を隠して見やすくする
+            pill(d, dx, dy + 110, "降格" if done else "最下位", RED, size=32)
+            en(d, (dx, dy + 160), "Relegated" if done else "Last place", 26, RED)
+            pill(d, ex, ey - 70, "昇格" if done else "2部1位", GREEN, size=32)
+            en(d, (ex, ey - 112), "Promoted" if done else "2nd Div. champ", 24, GREEN)
     show(img, t, A + 2.4, B, (60, 500, 1040, 1215), movers, dy=0)
     show(img, t, A + 4.6, B, (30, 790, 700, 940), lambda d: (
         pill(d, 300, 840, "入れ替え戦", GOLD, (30, 30, 40), 40), en(d, (300, 905), "Playoff", 30)), pop=True)
-    show(img, t, A + 5.0, B, (430, 800, 640, 900), lambda d: (
-        arrow(d, 530, 850, False, RED), arrow(d, 610, 850, True, GREEN)), pop=True)
+    show(img, t, A + 5.0, B, (430, 800, 560, 900), lambda d: (
+        arrow(d, 462, 850, False, RED), arrow(d, 524, 850, True, GREEN)), pop=True)
     show(img, t, A + 8.0, B, (0, 1285, W, 1420), lambda d: (
         text(d, (540, 1325), "リーグの中に階層がある", 64, INK), en(d, (540, 1382), "Tiers live inside each league", 36)))
     show(img, t, A + 8.8, B, (0, 1425, W, 1520), lambda d: (
@@ -267,6 +282,12 @@ def frame_nom(t: float, treal: float) -> Image.Image:
     show(img, t, A + 5.4, 23.2, (0, 1235, W, 1360), lambda d: (
         text(d, (540, 1268), "競技力ではDivisionは入れ替わらない", 46, RED),
         en(d, (540, 1322), "Divisions aren't swapped by performance", 32, RED)))
+    def school_move(d):
+        q = ease_io(clamp((t - 23.8) / 2.2))
+        x = 255 + (825 - 255) * q
+        y = 727 - 22 * math.sin(math.pi * q)
+        chip(d, x, y, "学校X", fill=(255, 241, 214), outline=GOLD, w=150, h=56, size=30)
+    show(img, t, 23.4, B, (60, 680, 1020, 790), school_move, dy=0)
     show(img, t, 23.4, B, (0, 1235, W, 1360), lambda d: (
         text(d, (540, 1268), "Conferenceが変わってもDivisionは変わらない", 40, RED),
         en(d, (540, 1322), "Changing conferences doesn't change the division", 30, RED)), pop=True)
@@ -367,6 +388,27 @@ def frame(t: float) -> Image.Image:
     return frame_nom(nominal(t), t)
 
 
+def real_of(n: float) -> float:
+    """nominal() の逆変換: 図を作ったときの秒 n が、実際の動画では何秒か"""
+    for (r0, n0), (r1, n1) in zip(ANCHORS, ANCHORS[1:]):
+        if n0 <= n <= n1 and n1 > n0:
+            return r0 + (n - n0) * (r1 - r0) / (n1 - n0)
+    return ANCHORS[-1][0]
+
+
+SFX_NOMINAL = {
+    "pop": [0.2, 1.5, 5.2, 5.7, 8.6, 16.0, 16.5, 17.0, 18.2, 18.55, 18.9, 20.8, 23.4, 28.3, 29.6, 34.6, 35.1],
+    "whoosh": [4.0, 9.6, 15.4, 23.8, 28.2],
+    "ding": [2.7, 11.6, 31.2],
+    "thud": [11.6],
+    "click": [20.4, 20.5],
+}
+
+
+def sfx_events() -> dict[str, list[float]]:
+    return {k: [real_of(n) - (0.2 if k == "whoosh" else 0.0) for n in v] for k, v in SFX_NOMINAL.items()}
+
+
 def main() -> int:
     if "--stills" in sys.argv:
         ts = [float(x) for x in sys.argv[sys.argv.index("--stills") + 1:]]
@@ -375,9 +417,15 @@ def main() -> int:
             print(f"/tmp/baseball_{t:05.1f}.jpg")
         return 0
     out = ROOT / "posts" / FOLDER / "reel.mp4"
+    track = Path(tempfile.mkdtemp()) / "sfx_bgm.wav"
+    make_track(DUR, sfx_events(), str(track))
+    mix = ("[1:a]aformat=sample_rates=44100:channel_layouts=mono[v];"
+           "[2:a]aformat=sample_rates=44100:channel_layouts=mono[m];"
+           "[v][m]amix=inputs=2:normalize=0:duration=longest,"
+           f"afade=t=out:st={DUR - 0.3}:d=0.3,alimiter=limit=0.95[o]")
     cmd = ["ffmpeg", "-y", "-loglevel", "error", "-f", "rawvideo", "-pix_fmt", "rgb24", "-s", f"{W}x{H}",
-           "-r", str(FPS), "-i", "-", "-i", str(VOICE),
-           "-map", "0:v", "-map", "1:a", "-af", f"afade=t=out:st={DUR - 0.3}:d=0.3",
+           "-r", str(FPS), "-i", "-", "-i", str(VOICE), "-i", str(track),
+           "-filter_complex", mix, "-map", "0:v", "-map", "[o]",
            "-c:v", "libx264", "-preset", "medium", "-crf", "20", "-pix_fmt", "yuv420p",
            "-c:a", "aac", "-b:a", "160k", "-t", str(DUR), "-movflags", "+faststart", str(out)]
     p = subprocess.Popen(cmd, stdin=subprocess.PIPE)
