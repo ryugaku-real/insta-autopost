@@ -47,5 +47,6 @@
       "type": "cta"
     }
   ],
-  "story": true
+  "story": true,
+  "reel": true
 }
