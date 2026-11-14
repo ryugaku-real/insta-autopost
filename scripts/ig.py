@@ -17,6 +17,8 @@
   IG_API_VERSION    既定 v23.0
   DEFAULT_TZ        既定 America/Chicago（publish_at に時差がないときに使う）
   LATE_LIMIT_HOURS  既定 24（これ以上遅れた投稿は公開しない）
+  IG_AI_LABEL       既定 1（フィード投稿に「AI生成コンテンツ」の自己申告ラベルを付ける。0 で付けない。
+                    post.json に "ai_label": false と書くと、その投稿だけ付けない）
 """
 from __future__ import annotations
 
@@ -46,6 +48,9 @@ JST = ZoneInfo("Asia/Tokyo")
 STORY_HOURS = {int(h) for h in os.environ.get("STORY_HOURS_JST", "18").split(",") if h.strip()}
 # リール自動投稿は初期状態でオフ。REELS_ENABLED=1 にするか、post.json に "reel": true を書いた投稿だけ出す
 REELS_ENABLED = os.environ.get("REELS_ENABLED", "").strip().lower() in ("1", "true", "yes")
+
+# フィード投稿（画像1枚・カルーセル）に「AI生成コンテンツ」の自己申告ラベルを付ける（既定でオン）
+AI_LABEL = os.environ.get("IG_AI_LABEL", "1").strip().lower() not in ("0", "false", "no", "off")
 
 MAX_CAPTION = 2200
 MAX_HASHTAGS = 30
@@ -206,11 +211,20 @@ def already_on_instagram(ig_id: str, caption: str) -> dict | None:
     return None
 
 
+def wants_ai_label(p: dict) -> bool:
+    if "ai_label" in p:
+        return bool(p["ai_label"])
+    return AI_LABEL
+
+
 def publish_post(ig_id: str, p: dict) -> dict:
     caption = p.get("caption", "")
     imgs = p["images"]
+    # 公式ドキュメント: is_ai_generated は、画像1枚のコンテナと、カルーセルのコンテナにだけ付ける
+    # （カルーセルの子コンテナに付けるとエラーになる）
+    ai = {"is_ai_generated": "true"} if wants_ai_label(p) else {}
     if len(imgs) == 1:
-        c = api("POST", f"{ig_id}/media", {"image_url": image_url(p, imgs[0]), "caption": caption})
+        c = api("POST", f"{ig_id}/media", {"image_url": image_url(p, imgs[0]), "caption": caption, **ai})
         creation_id = c["id"]
     else:
         children = []
@@ -221,7 +235,7 @@ def publish_post(ig_id: str, p: dict) -> dict:
         for cid in children:
             wait_ready(cid)
         c = api("POST", f"{ig_id}/media",
-                {"media_type": "CAROUSEL", "children": ",".join(children), "caption": caption})
+                {"media_type": "CAROUSEL", "children": ",".join(children), "caption": caption, **ai})
         creation_id = c["id"]
     wait_ready(creation_id)
     res = api("POST", f"{ig_id}/media_publish", {"creation_id": creation_id})
