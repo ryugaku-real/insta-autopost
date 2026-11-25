@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: ai-detector
+    runtime: docker
+    dockerfilePath: ./ai-detector/Dockerfile
+    dockerContext: ./ai-detector
+    healthCheckPath: /healthz
+    envVars:
+      - key: ANTHROPIC_API_KEY
+        sync: false        # Renderの画面で入力(コードに書かない)
+      - key: APP_PASSWORD
+        sync: false        # 合言葉。必ず設定する
+      - key: RATE_PER_MIN
+        value: "10"

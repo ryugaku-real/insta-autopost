@@ -7,8 +7,44 @@ import extract as extractor
 import stats
 import style
 
+import hmac
+import time
+from collections import defaultdict, deque
+
+from flask import Response
+
 app = Flask(__name__, static_folder="static")
+app.config["MAX_CONTENT_LENGTH"] = 12 * 1024 * 1024
 MAX_CHARS = 20000
+
+# 公開時の保護。APP_PASSWORD を設定すると、全ページに合言葉(Basic認証)が掛かる
+APP_PASSWORD = os.environ.get("APP_PASSWORD", "")
+# 1分あたりのAPI呼び出し上限(IPごと)。Claude API の料金暴走を防ぐ
+RATE_PER_MIN = int(os.environ.get("RATE_PER_MIN", "10"))
+_hits: dict[str, deque] = defaultdict(deque)
+
+
+@app.before_request
+def guard():
+    if request.path == "/healthz":
+        return None
+    if APP_PASSWORD:
+        a = request.authorization
+        if not a or not hmac.compare_digest((a.password or "").encode(), APP_PASSWORD.encode()):
+            return Response("合言葉が必要です", 401, {"WWW-Authenticate": 'Basic realm="ai-detector"'})
+    if request.path.startswith("/api/"):
+        ip = (request.headers.get("X-Forwarded-For", request.remote_addr) or "").split(",")[0].strip()
+        q, now = _hits[ip], time.time()
+        while q and now - q[0] > 60:
+            q.popleft()
+        if len(q) >= RATE_PER_MIN:
+            return jsonify(error="アクセスが多すぎます。1分ほど待ってください"), 429
+        q.append(now)
+
+
+@app.get("/healthz")
+def healthz():
+    return "ok"
 
 
 @app.get("/")
