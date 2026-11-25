@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="ja"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AI文章チェッカー</title>
+<style>
+:root{--bg:#fff;--fg:#1c1c1e;--mut:#6b7280;--card:#f5f6f8;--acc:#2563eb;--bd:#e5e7eb}
+@media(prefers-color-scheme:dark){:root{--bg:#111318;--fg:#e8e9ec;--mut:#9aa1ad;--card:#1b1e26;--bd:#2a2e38}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.7 system-ui,"Hiragino Sans",sans-serif}
+main{max-width:860px;margin:0 auto;padding:24px 16px 64px}
+h1{font-size:1.5rem;margin:.2em 0}.sub{color:var(--mut);margin-top:0}
+textarea{width:100%;min-height:220px;padding:12px;border:1px solid var(--bd);border-radius:10px;background:var(--card);color:var(--fg);font:inherit;resize:vertical}
+.row{display:flex;justify-content:space-between;align-items:center;margin:8px 0 16px;color:var(--mut);font-size:.9rem}
+button{background:var(--acc);color:#fff;border:0;border-radius:10px;padding:10px 22px;font:inherit;cursor:pointer}
+button:disabled{opacity:.5;cursor:wait}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:16px;margin:16px 0}
+.big{font-size:2.4rem;font-weight:700}.bar{height:10px;border-radius:5px;background:var(--bd);overflow:hidden}
+.bar>i{display:block;height:100%}
+.sent{display:inline;padding:1px 2px;border-radius:3px;cursor:help}
+.note{border-left:4px solid #d97706;padding:8px 12px;color:var(--mut);font-size:.9rem;margin:16px 0}
+dl{display:grid;grid-template-columns:auto 1fr;gap:4px 16px;margin:0}dt{color:var(--mut)}dd{margin:0}
+.err{color:#dc2626}
+</style></head><body><main>
+<h1>AI文章チェッカー</h1>
+<p class="sub">文章を貼ると、AIが書いた可能性を推定します。</p>
+<textarea id="t" placeholder="ここに確認したい文章を貼り付け(50文字以上)"></textarea>
+<div class="row"><span id="cnt">0文字</span><button id="go">チェックする</button></div>
+<div id="out"></div>
+<div class="note">この結果は<b>目安であり、証拠ではありません</b>。AI検出は誤判定があり、特に非ネイティブの書き手の文章は人間が書いてもAIと判定されやすいことが知られています。結果だけで本人を判断せず、下書き・過去の文章・本人への質問などと合わせて確認してください。</div>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+const esc=s=>s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const col=p=>`hsla(${120-p*1.2},70%,50%,.28)`;
+$('t').oninput=()=>$('cnt').textContent=$('t').value.length+'文字';
+$('go').onclick=async()=>{
+  $('go').disabled=true;$('out').innerHTML='<p>分析中…</p>';
+  try{
+    const r=await fetch('/api/analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:$('t').value})});
+    const d=await r.json();
+    if(!r.ok)throw new Error(d.error);
+    render(d);
+  }catch(e){$('out').innerHTML=`<p class="err">${esc(e.message)}</p>`}
+  $('go').disabled=false;
+};
+function render(d){
+  let h='';const L=d.llm,S=d.stats;
+  if(L){
+    const v={human:'人間が書いた可能性が高い',mixed:'一部AIの可能性あり',ai:'AIが書いた可能性が高い'}[L.verdict]||'';
+    h+=`<div class="card"><div class="big">${L.ai_probability}%</div><div>AI生成の可能性 — ${v}</div>
+    <div class="bar" style="margin:10px 0"><i style="width:${L.ai_probability}%;background:${col(L.ai_probability).replace('.28','1')}"></i></div>
+    <p>${esc(L.summary||'')}</p></div>`;
+    h+=`<div class="card"><b>文ごとの判定</b>(マウスを乗せると理由)<p>`+
+      (L.sentences||[]).map(s=>`<span class="sent" style="background:${col(s.ai_likelihood)}" title="${esc(s.reason||'')} (${s.ai_likelihood}%)">${esc(s.text)}</span>`).join(' ')+`</p></div>`;
+  }
+  if(d.llm_error)h+=`<p class="err">${esc(d.llm_error)}</p>`;
+  if(S.enough)h+=`<div class="card"><b>文体統計(ローカル計算)</b><dl>
+    <dt>文の数</dt><dd>${S.sentences}</dd><dt>平均文長</dt><dd>${S.avg_len}字</dd>
+    <dt>文長のばらつき</dt><dd>${S.burstiness}(小さいほどAIっぽい均一さ)</dd>
+    <dt>語彙の多様性</dt><dd>${S.lexical_diversity}</dd>
+    <dt>統計スコア</dt><dd>${Math.round(S.heuristic_score*100)}%</dd></dl></div>`;
+  else h+='<p>文が少なすぎて統計は出せません。</p>';
+  $('out').innerHTML=h;
+}
+</script></body></html>
