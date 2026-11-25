@@ -3,6 +3,7 @@ import os
 from flask import Flask, jsonify, request, send_from_directory
 
 import llm
+import extract as extractor
 import stats
 import style
 
@@ -56,6 +57,20 @@ def compare():
     if len(text) < 50 or len(text) > MAX_CHARS or len(ref) > MAX_CHARS * 2:
         return jsonify(error="文章の長さが範囲外です"), 400
     return jsonify(style.compare(text, ref))
+
+
+@app.post("/api/extract")
+def extract_file():
+    f = request.files.get("file")
+    if not f:
+        return jsonify(error="ファイルがありません"), 400
+    try:
+        text = extractor.extract(f.filename or "", f.read())
+    except ValueError as e:
+        return jsonify(error=str(e)), 400
+    except Exception:
+        return jsonify(error="ファイルを読み込めませんでした(壊れているか暗号化されています)"), 400
+    return jsonify(text=text[:MAX_CHARS], truncated=len(text) > MAX_CHARS)
 
 
 if __name__ == "__main__":
