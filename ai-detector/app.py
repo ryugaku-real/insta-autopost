@@ -33,5 +33,20 @@ def analyze():
     return jsonify(result)
 
 
+@app.post("/api/rewrite")
+def rewrite():
+    body = request.get_json(silent=True) or {}
+    text = body.get("text", "").strip()
+    if len(text) < 50 or len(text) > MAX_CHARS:
+        return jsonify(error=f"50〜{MAX_CHARS}文字の文章を入力してください"), 400
+    if not os.environ.get("ANTHROPIC_API_KEY"):
+        return jsonify(error="ANTHROPIC_API_KEY が未設定です"), 400
+    hints = [h for h in body.get("hints", []) if isinstance(h, str)]
+    try:
+        return jsonify(text=llm.rewrite(text, hints))
+    except Exception as e:
+        return jsonify(error=str(e)), 500
+
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)), debug=False)

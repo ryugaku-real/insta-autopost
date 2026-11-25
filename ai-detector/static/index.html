@@ -19,6 +19,8 @@ button:disabled{opacity:.5;cursor:wait}
 .note{border-left:4px solid #d97706;padding:8px 12px;color:var(--mut);font-size:.9rem;margin:16px 0}
 dl{display:grid;grid-template-columns:auto 1fr;gap:4px 16px;margin:0}dt{color:var(--mut)}dd{margin:0}
 .err{color:#dc2626}
+button.sec{background:var(--card);color:var(--fg);border:1px solid var(--bd);margin-top:8px}
+#rw pre{white-space:pre-wrap;font:inherit;margin:8px 0}
 </style></head><body><main>
 <h1>AI文章チェッカー</h1>
 <p class="sub">文章を貼ると、AIが書いた可能性を推定します。</p>
@@ -43,7 +45,7 @@ $('go').onclick=async()=>{
   $('go').disabled=false;
 };
 function render(d){
-  let h='';const L=d.llm,S=d.stats;
+  let h='';const L=d.llm,S=d.stats;window._hints=L?(L.sentences||[]).filter(s=>s.ai_likelihood>=60).map(s=>s.reason).filter(Boolean):[];
   if(L){
     const v={human:'人間が書いた可能性が高い',mixed:'一部AIの可能性あり',ai:'AIが書いた可能性が高い'}[L.verdict]||'';
     h+=`<div class="card"><div class="big">${L.ai_probability}%</div><div>AI生成の可能性 — ${v}</div>
@@ -52,6 +54,7 @@ function render(d){
     h+=`<div class="card"><b>文ごとの判定</b>(マウスを乗せると理由)<p>`+
       (L.sentences||[]).map(s=>`<span class="sent" style="background:${col(s.ai_likelihood)}" title="${esc(s.reason||'')} (${s.ai_likelihood}%)">${esc(s.text)}</span>`).join(' ')+`</p></div>`;
   }
+  if(L)h+=`<div class="card"><b>自然な文章に推敲する</b><p style="color:var(--mut);margin:4px 0">自分の文章を、より自分らしい言葉に整えるための機能です。事実は変えません。提出先のルール(AI利用の可否)は守ってください。</p><button class="sec" id="rwb" onclick="rewrite()">推敲案を作る</button><div id="rw"></div></div>`;
   if(d.llm_error)h+=`<p class="err">${esc(d.llm_error)}</p>`;
   if(S.enough)h+=`<div class="card"><b>文体統計(ローカル計算)</b><dl>
     <dt>文の数</dt><dd>${S.sentences}</dd><dt>平均文長</dt><dd>${S.avg_len}字</dd>
@@ -60,5 +63,14 @@ function render(d){
     <dt>統計スコア</dt><dd>${Math.round(S.heuristic_score*100)}%</dd></dl></div>`;
   else h+='<p>文が少なすぎて統計は出せません。</p>';
   $('out').innerHTML=h;
+}
+async function rewrite(){
+  const b=$('rwb');b.disabled=true;$('rw').innerHTML='<p>推敲中…</p>';
+  try{
+    const r=await fetch('/api/rewrite',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:$('t').value,hints:window._hints})});
+    const d=await r.json();if(!r.ok)throw new Error(d.error);
+    $('rw').innerHTML=`<pre>${esc(d.text)}</pre><button class="sec" onclick="navigator.clipboard.writeText(document.querySelector('#rw pre').textContent)">コピー</button>`;
+  }catch(e){$('rw').innerHTML=`<p class="err">${esc(e.message)}</p>`}
+  b.disabled=false;
 }
 </script></body></html>

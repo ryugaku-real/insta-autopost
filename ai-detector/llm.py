@@ -33,3 +33,30 @@ def judge(text: str) -> dict:
     if not m:
         raise ValueError("モデルの応答をJSONとして読めませんでした")
     return json.loads(m.group(0))
+
+
+REWRITE = """次の文章を、意味と主張を変えずに、より自然で書き手らしい文章に推敲してください。
+- 定型的な接続表現や型にはまった言い回しを減らし、具体的で率直な表現にする
+- 文の長さや構成に自然な変化をつける
+- 事実・数字・引用を追加・変更しない(ない情報は作らない)
+- 元と同じ言語で書く
+%s
+推敲後の本文だけを出力してください(説明不要)。
+
+<text>
+%s
+</text>"""
+
+
+def rewrite(text: str, hints: list[str] | None = None) -> str:
+    import anthropic
+
+    hint = ""
+    if hints:
+        hint = "特に次の点を直してください:\n" + "\n".join(f"- {h}" for h in hints[:8]) + "\n"
+    msg = anthropic.Anthropic().messages.create(
+        model=MODEL,
+        max_tokens=4096,
+        messages=[{"role": "user", "content": REWRITE % (hint, text)}],
+    )
+    return "".join(b.text for b in msg.content if b.type == "text").strip()
