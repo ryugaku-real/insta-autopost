@@ -25,6 +25,9 @@ button.sec{background:var(--card);color:var(--fg);border:1px solid var(--bd);mar
 <h1>AI文章チェッカー</h1>
 <p class="sub">文章を貼ると、AIが書いた可能性を推定します。</p>
 <textarea id="t" placeholder="ここに確認したい文章を貼り付け(50文字以上)"></textarea>
+<details style="margin-top:12px"><summary>本人の過去の文章と比べる(任意)</summary>
+<p style="color:var(--mut);margin:6px 0">同じ人が前に書いた文章を貼ると、文体がどれだけ近いかを出します。多いほど(1,000字以上)正確です。</p>
+<textarea id="ref" style="min-height:140px" placeholder="本人が以前に書いた文章"></textarea></details>
 <div class="row"><span id="cnt">0文字</span><button id="go">チェックする</button></div>
 <div id="out"></div>
 <div class="note">この結果は<b>目安であり、証拠ではありません</b>。AI検出は誤判定があり、特に非ネイティブの書き手の文章は人間が書いてもAIと判定されやすいことが知られています。結果だけで本人を判断せず、下書き・過去の文章・本人への質問などと合わせて確認してください。</div>
@@ -41,6 +44,10 @@ $('go').onclick=async()=>{
     const d=await r.json();
     if(!r.ok)throw new Error(d.error);
     render(d);
+    if($('ref').value.trim()){
+      const c=await(await fetch('/api/compare',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:$('t').value,reference:$('ref').value})})).json();
+      $('out').insertAdjacentHTML('afterbegin',renderCmp(c));
+    }
   }catch(e){$('out').innerHTML=`<p class="err">${esc(e.message)}</p>`}
   $('go').disabled=false;
 };
@@ -63,6 +70,14 @@ function render(d){
     <dt>統計スコア</dt><dd>${Math.round(S.heuristic_score*100)}%</dd></dl></div>`;
   else h+='<p>文が少なすぎて統計は出せません。</p>';
   $('out').innerHTML=h;
+}
+function renderCmp(c){
+  if(c.error)return `<p class="err">${esc(c.error)}</p>`;
+  if(!c.enough)return `<p class="err">${esc(c.message)}</p>`;
+  return `<div class="card"><b>過去の文章との文体比較</b><div class="big">${c.similarity}%</div><div>文体は<b>${c.level}</b></div>
+  ${c.short_ref?'<p class="err">過去の文章が短いため、参考程度です。</p>':''}
+  <dl style="margin-top:10px">`+c.rows.map(r=>`<dt>${r.name}</dt><dd>今回 ${r.text} / 過去 ${r.ref}${r.diff>0.4?' ⚠ 差が大きい':''}</dd>`).join('')+`</dl>
+  <p style="color:var(--mut);font-size:.9rem">文体は話題・文章の種類(メールと論文など)・年月でも変わります。違い=別人とは限りません。</p></div>`;
 }
 async function rewrite(){
   const b=$('rwb');b.disabled=true;$('rw').innerHTML='<p>推敲中…</p>';

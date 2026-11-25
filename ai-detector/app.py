@@ -4,6 +4,7 @@ from flask import Flask, jsonify, request, send_from_directory
 
 import llm
 import stats
+import style
 
 app = Flask(__name__, static_folder="static")
 MAX_CHARS = 20000
@@ -46,6 +47,15 @@ def rewrite():
         return jsonify(text=llm.rewrite(text, hints))
     except Exception as e:
         return jsonify(error=str(e)), 500
+
+
+@app.post("/api/compare")
+def compare():
+    body = request.get_json(silent=True) or {}
+    text, ref = body.get("text", "").strip(), body.get("reference", "").strip()
+    if len(text) < 50 or len(text) > MAX_CHARS or len(ref) > MAX_CHARS * 2:
+        return jsonify(error="文章の長さが範囲外です"), 400
+    return jsonify(style.compare(text, ref))
 
 
 if __name__ == "__main__":
